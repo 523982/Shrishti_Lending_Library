@@ -1,0 +1,83 @@
+.book-card {
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    overflow: hidden;
+    background-color: #fff;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    display: flex;
+    flex-direction: column;
+    cursor: pointer;
+}
+
+.book-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+}
+
+.book-card-cover {
+    width: 100%;
+    height: 250px;
+    object-fit: cover;
+}
+
+.book-card-info {
+    padding: 1rem;
+    flex-grow: 1;
+}
+
+.book-card-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0 0 0.25rem 0;
+    color: #333;
+}
+
+.book-card-author {
+    font-size: 0.9rem;
+    color: #666;
+    margin: 0 0 1rem 0;
+}
+
+.book-card-status {
+    align-self: flex-start;
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.book-card-status.Available {
+    background-color: #e6f7f0;
+    color: #0d6efd;
+}
+
+.book-card-status.Unavailable {
+    background-color: #f8d7da;
+    color: #842029;
+}
+
+.status-badge {
+    padding: 4px 12px;
+    border-radius: 16px;
+    color: white;
+    font-weight: 600;
+    font-size: 0.85em;
+  }
+  
+  .status-available {
+    background-color: #28a745; /* A nice green - feel free to change! */
+  }
+  
+  .status-unavailable {
+    background-color: #dc3545; /* A standard red - feel free to change! */
+  }
+
+.book-card-lcost {
+    align-self: flex-start;
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+

@@ -1,0 +1,27 @@
+# ============================================================
+# Copy this file to "application.properties" and fill in your
+# own local values. application.properties is gitignored and
+# will NEVER be committed to the repo.
+# ============================================================
+
+# --- Option A: PostgreSQL (recommended for production/cloud) ---
+spring.datasource.url=jdbc:postgresql://localhost:5432/lending_library_db
+spring.datasource.username=postgres
+spring.datasource.password=CHANGE_ME
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
+
+# --- Option B: H2 file-based DB (good for local dev) ---
+# Comment out the PostgreSQL lines above and uncomment these instead.
+# Uses a relative path so it works on any machine, not tied to one user's folder.
+#spring.datasource.url=jdbc:h2:file:./data/db
+#spring.datasource.driverClassName=org.h2.Driver
+#spring.datasource.username=admindb
+#spring.datasource.password=CHANGE_ME
+#spring.jpa.database-platform=org.hibernate.dialect.H2Dialect
+#spring.h2.console.enabled=true
+
+# --- Spring JPA (common settings) ---
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=true
+spring.jpa.properties.hibernate.enable_lazy_load_no_trans=true
+spring.jpa.properties.hibernate.format_sql=true

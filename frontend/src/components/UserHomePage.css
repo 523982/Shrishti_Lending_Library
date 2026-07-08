@@ -1,0 +1,31 @@
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(25px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.home-page .welcome-title,
+.home-page .welcome-subtitle {
+    opacity: 0;
+    animation: fadeInUp 0.8s ease-out forwards;
+    animation-fill-mode: forwards;
+}
+
+.home-page .welcome-title {
+    animation-delay: 1.6s;
+}
+
+.home-page .welcome-subtitle {
+    animation-delay: 1.9s;
+}
+
+.page-container {
+    text-align: center;
+    padding: 4rem 2rem;
+}
+

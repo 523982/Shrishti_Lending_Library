@@ -1,0 +1,40 @@
+# ===== Backend: Java / Spring Boot / Maven =====
+backend/target/
+backend/bin/
+backend/*.class
+backend/*.jar
+backend/*.war
+backend/.settings/
+backend/.classpath
+backend/.project
+
+# Real local DB credentials — never commit, use application.properties.example instead
+backend/src/main/resources/application.properties
+backend/src/main/resources/application-local.properties
+
+# H2 file-based database data (local dev database files)
+backend/data/
+backend/data_old/
+
+# ===== Frontend: React / Node / Vite =====
+frontend/node_modules/
+frontend/dist/
+frontend/dist-ssr/
+frontend/.env
+frontend/.env.local
+frontend/*.local
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+
+# ===== IDE / OS =====
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.iml
+.DS_Store
+Thumbs.db
+.metadata/
+
+# ===== Misc =====
+*.log

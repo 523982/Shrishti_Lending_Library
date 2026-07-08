@@ -1,0 +1,126 @@
+.admin-form-container {
+    max-width: 600px;
+    margin: 2rem auto;
+    padding: 2rem;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    animation: fadeInUp 0.5s ease-out;
+}
+
+.admin-form-container h1 {
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+
+.admin-form .form-group {
+    margin-bottom: 1.5rem;
+}
+
+.admin-form label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: #343a40;
+}
+
+.admin-form input[type="text"],
+.admin-form input[type="number"],
+.admin-form input[type="email"],
+.admin-form textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 1rem;
+    box-sizing: border-box; /* Important for padding and width */
+}
+
+.admin-form textarea {
+    resize: vertical;
+}
+
+.submit-button {
+    width: 100%;
+    padding: 12px;
+    background-color: #28a745;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.submit-button:hover {
+    background-color: #218838;
+}
+
+.success-message {
+    margin-top: 1rem;
+    color: #28a745;
+    text-align: center;
+    font-weight: 600;
+}
+
+.error-message {
+    margin-top: 1rem;
+    color: #dc3545;
+    text-align: center;
+    font-weight: 600;
+}
+
+/* Re-using back-link style from BookDetailsPage.css */
+.back-link {
+    display: inline-block;
+    margin-bottom: 1.5rem;
+    color: #007bff;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.back-link:hover {
+    text-decoration: underline;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+
+.community-input-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.community-input-group select {
+    flex-grow: 1;
+}
+
+.add-new-link {
+    white-space: nowrap;
+    color: #007bff;
+    text-decoration: none;
+    font-weight: 600;
+    padding: 8px;
+}
+
+
+.form-group-inline {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.form-group-inline input[type="checkbox"] {
+    width: auto; /* Override the default full-width for inputs */
+}
