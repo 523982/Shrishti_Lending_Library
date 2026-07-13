@@ -9,10 +9,10 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>com.library</groupId>
-	<artifactId>lending-library-api</artifactId>
+	<artifactId>shrishti-lending-library-api</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>Shrishti Lending Library</name>
-	<description>Backend API for the Lending Library application</description>
+	<name>Shrishti Lending Library API</name>
+	<description>Backend API for the Shrishti Lending Library application</description>
 	<properties>
 		<java.version>21</java.version>
 	</properties>
@@ -64,6 +64,7 @@
 	</dependencies>
 
 	<build>
+		<finalName>shrishti-lending-library-api</finalName>
 		<plugins>
 			<plugin>
 				<groupId>org.springframework.boot</groupId>

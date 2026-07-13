@@ -1,0 +1,1346 @@
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+ :: Spring Boot ::                (v3.2.0)
+
+2026-07-13T15:48:43.866+05:30  INFO 21584 --- [           main] com.library.LendingLibraryApplication    : Starting LendingLibraryApplication using Java 23.0.1 with PID 21584 (C:\Users\523982\OneDrive - Cognizant\Documents\AI\shrishti-lending-library-repo\Shrishti Lending Library\backend\target\classes started by 523982 in C:\Users\523982\OneDrive - Cognizant\Documents\AI\shrishti-lending-library-repo\Shrishti Lending Library\backend)
+2026-07-13T15:48:43.874+05:30  INFO 21584 --- [           main] com.library.LendingLibraryApplication    : No active profile set, falling back to 1 default profile: "default"
+2026-07-13T15:48:47.059+05:30  INFO 21584 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-07-13T15:48:47.443+05:30  INFO 21584 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 347 ms. Found 5 JPA repository interfaces.
+2026-07-13T15:48:49.870+05:30  INFO 21584 --- [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8080 (http)
+2026-07-13T15:48:49.908+05:30  INFO 21584 --- [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-07-13T15:48:49.910+05:30  INFO 21584 --- [           main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.16]
+2026-07-13T15:48:50.260+05:30  INFO 21584 --- [           main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2026-07-13T15:48:50.266+05:30  INFO 21584 --- [           main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 6186 ms
+2026-07-13T15:48:50.470+05:30  INFO 21584 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-07-13T15:48:51.915+05:30  INFO 21584 --- [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection conn0: url=jdbc:h2:file:C:/Users/523982/OneDrive - Cognizant/Documents/AI/shrishti-lending-library-repo/Shrishti Lending Library/backend/data/db user=ADMINDB
+2026-07-13T15:48:51.921+05:30  INFO 21584 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-07-13T15:48:51.967+05:30  INFO 21584 --- [           main] o.s.b.a.h2.H2ConsoleAutoConfiguration    : H2 console available at '/h2-console'. Database available at 'jdbc:h2:file:C:/Users/523982/OneDrive - Cognizant/Documents/AI/shrishti-lending-library-repo/Shrishti Lending Library/backend/data/db'
+2026-07-13T15:48:52.631+05:30  INFO 21584 --- [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-07-13T15:48:52.935+05:30  INFO 21584 --- [           main] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.3.1.Final
+2026-07-13T15:48:53.097+05:30  INFO 21584 --- [           main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-07-13T15:48:54.056+05:30  INFO 21584 --- [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-07-13T15:48:54.246+05:30  WARN 21584 --- [           main] org.hibernate.orm.deprecation            : HHH90000025: H2Dialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+2026-07-13T15:48:59.653+05:30  INFO 21584 --- [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-07-13T15:49:00.227+05:30  INFO 21584 --- [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-07-13T15:49:02.397+05:30  INFO 21584 --- [           main] o.s.d.j.r.query.QueryEnhancerFactory     : Hibernate is in classpath; If applicable, HQL parser will be used.
+2026-07-13T15:49:03.773+05:30  WARN 21584 --- [           main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-07-13T15:49:06.030+05:30  INFO 21584 --- [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 8080 (http) with context path ''
+2026-07-13T15:49:06.077+05:30  INFO 21584 --- [           main] com.library.LendingLibraryApplication    : Started LendingLibraryApplication in 23.549 seconds (process running for 24.884)
+2026-07-13T15:50:40.681+05:30  INFO 21584 --- [nio-8080-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-07-13T15:50:40.683+05:30  INFO 21584 --- [nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2026-07-13T15:50:40.689+05:30  INFO 21584 --- [nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 6 ms
+Hibernate: 
+    SELECT
+        * 
+    FROM
+        INVENTORY 
+    WHERE
+        status_id = 2 
+        AND LOWER(book_name) LIKE LOWER(CONCAT('%', ?, '%'))
+Hibernate: 
+    select
+        bs1_0.status_id,
+        bs1_0.description 
+    from
+        book_status bs1_0 
+    where
+        bs1_0.status_id=?
+Hibernate: 
+    SELECT
+        t.*,
+        customer_name,
+        mobile_number,
+        b.lending_cost  
+    FROM
+        TRANSACTIONS t,
+        INVENTORY b,
+        customers c 
+    where
+        t.customer_id=c.customer_id 
+        and t.book_id=b.book_id 
+        and status_id=2 
+        and return_date is null 
+        and t.book_id=?
+Hibernate: 
+    SELECT
+        * 
+    FROM
+        INVENTORY 
+    WHERE
+        status_id = 2 
+        AND LOWER(book_name) LIKE LOWER(CONCAT('%', ?, '%'))
+Hibernate: 
+    select
+        bs1_0.status_id,
+        bs1_0.description 
+    from
+        book_status bs1_0 
+    where
+        bs1_0.status_id=?
+Hibernate: 
+    select
+        c1_0.customer_id,
+        c1_0.block_number,
+        c1_0.community_id,
+        c2_0.community_id,
+        c2_0.community_name,
+        c1_0.customer_name,
+        c1_0.mobile_number,
+        c1_0.unit_number 
+    from
+        customers c1_0 
+    join
+        communities c2_0 
+            on c2_0.community_id=c1_0.community_id 
+    where
+        c1_0.customer_id=?
+Hibernate: 
+    select
+        b1_0.book_id,
+        b1_0.author,
+        b1_0.book_name,
+        bs1_0.status_id,
+        bs1_0.description,
+        b1_0.genre,
+        b1_0.lending_cost,
+        b1_0.purchase_price 
+    from
+        inventory b1_0 
+    left join
+        book_status bs1_0 
+            on bs1_0.status_id=b1_0.status_id 
+    where
+        b1_0.book_id=?
+Hibernate: 
+    SELECT
+        t.*,
+        customer_name,
+        mobile_number,
+        b.lending_cost  
+    FROM
+        TRANSACTIONS t,
+        INVENTORY b,
+        customers c 
+    where
+        t.customer_id=c.customer_id 
+        and t.book_id=b.book_id 
+        and status_id=2 
+        and return_date is null 
+        and t.book_id=?
+Hibernate: 
+    select
+        c1_0.customer_id,
+        c1_0.block_number,
+        c1_0.community_id,
+        c2_0.community_id,
+        c2_0.community_name,
+        c1_0.customer_name,
+        c1_0.mobile_number,
+        c1_0.unit_number 
+    from
+        customers c1_0 
+    join
+        communities c2_0 
+            on c2_0.community_id=c1_0.community_id 
+    where
+        c1_0.customer_id=?
+Hibernate: 
+    select
+        b1_0.book_id,
+        b1_0.author,
+        b1_0.book_name,
+        bs1_0.status_id,
+        bs1_0.description,
+        b1_0.genre,
+        b1_0.lending_cost,
+        b1_0.purchase_price 
+    from
+        inventory b1_0 
+    left join
+        book_status bs1_0 
+            on bs1_0.status_id=b1_0.status_id 
+    where
+        b1_0.book_id=?
+Hibernate: 
+    select
+        bs1_0.status_id,
+        bs1_0.description 
+    from
+        book_status bs1_0 
+    where
+        bs1_0.status_id=?
+Hibernate: 
+    SELECT
+        transaction_id 
+    FROM
+        transactions t 
+    WHERE
+        t.book_id=? 
+        and return_date is null
+Hibernate: 
+    select
+        t1_0.transaction_id,
+        t1_0.amount_paid,
+        t1_0.book_id,
+        t1_0.customer_id,
+        t1_0.is_partially_paid,
+        t1_0.is_swap,
+        t1_0.pickup_date,
+        t1_0.return_date,
+        t1_0.total_amount 
+    from
+        transactions t1_0 
+    where
+        t1_0.transaction_id=?
+Hibernate: 
+    select
+        b1_0.book_id,
+        b1_0.author,
+        b1_0.book_name,
+        bs1_0.status_id,
+        bs1_0.description,
+        b1_0.genre,
+        b1_0.lending_cost,
+        b1_0.purchase_price 
+    from
+        inventory b1_0 
+    left join
+        book_status bs1_0 
+            on bs1_0.status_id=b1_0.status_id 
+    where
+        b1_0.book_id=?
+Hibernate: 
+    select
+        c1_0.customer_id,
+        c1_0.block_number,
+        c1_0.community_id,
+        c2_0.community_id,
+        c2_0.community_name,
+        c1_0.customer_name,
+        c1_0.mobile_number,
+        c1_0.unit_number 
+    from
+        customers c1_0 
+    join
+        communities c2_0 
+            on c2_0.community_id=c1_0.community_id 
+    where
+        c1_0.customer_id=?
+Hibernate: 
+    update
+        transactions 
+    set
+        amount_paid=?,
+        book_id=?,
+        customer_id=?,
+        is_partially_paid=?,
+        is_swap=?,
+        pickup_date=?,
+        return_date=?,
+        total_amount=? 
+    where
+        transaction_id=?
+Hibernate: 
+    update
+        inventory 
+    set
+        author=?,
+        book_name=?,
+        status_id=?,
+        genre=?,
+        lending_cost=?,
+        purchase_price=? 
+    where
+        book_id=?
+Hibernate: 
+    SELECT
+        * 
+    FROM
+        transactions t 
+    ORDER BY
+        PICKUP_DATE DESC 
+    limit
+        5
+Hibernate: 
+    select
+        c1_0.customer_id,
+        c1_0.block_number,
+        c1_0.community_id,
+        c2_0.community_id,
+        c2_0.community_name,
+        c1_0.customer_name,
+        c1_0.mobile_number,
+        c1_0.unit_number 
+    from
+        customers c1_0 
+    join
+        communities c2_0 
+            on c2_0.community_id=c1_0.community_id 
+    where
+        c1_0.customer_id=?
+Hibernate: 
+    select
+        b1_0.book_id,
+        b1_0.author,
+        b1_0.book_name,
+        bs1_0.status_id,
+        bs1_0.description,
+        b1_0.genre,
+        b1_0.lending_cost,
+        b1_0.purchase_price 
+    from
+        inventory b1_0 
+    left join
+        book_status bs1_0 
+            on bs1_0.status_id=b1_0.status_id 
+    where
+        b1_0.book_id=?
+Hibernate: 
+    SELECT
+        * 
+    FROM
+        transactions t 
+    ORDER BY
+        PICKUP_DATE DESC 
+    limit
+        5
+Hibernate: 
+    select
+        c1_0.customer_id,
+        c1_0.block_number,
+        c1_0.community_id,
+        c2_0.community_id,
+        c2_0.community_name,
+        c1_0.customer_name,
+        c1_0.mobile_number,
+        c1_0.unit_number 
+    from
+        customers c1_0 
+    join
+        communities c2_0 
+            on c2_0.community_id=c1_0.community_id 
+    where
+        c1_0.customer_id=?
+Hibernate: 
+    select
+        b1_0.book_id,
+        b1_0.author,
+        b1_0.book_name,
+        bs1_0.status_id,
+        bs1_0.description,
+        b1_0.genre,
+        b1_0.lending_cost,
+        b1_0.purchase_price 
+    from
+        inventory b1_0 
+    left join
+        book_status bs1_0 
+            on bs1_0.status_id=b1_0.status_id 
+    where
+        b1_0.book_id=?
+Hibernate: 
+    select
+        count(*) 
+    from
+        customers c1_0
+Hibernate: 
+    select
+        count(*) 
+    from
+        inventory b1_0
+Hibernate: 
+    select
+        count(*) 
+    from
+        communities c1_0
+Hibernate: 
+    SELECT
+        count(*) 
+    FROM
+        INVENTORY 
+    WHERE
+        status_id = 2
+Hibernate: 
+    select
+        count(*) 
+    from
+        customers c1_0
+Hibernate: 
+    select
+        count(*) 
+    from
+        communities c1_0
+Hibernate: 
+    select
+        count(*) 
+    from
+        inventory b1_0
+Hibernate: 
+    SELECT
+        count(*) 
+    FROM
+        INVENTORY 
+    WHERE
+        status_id = 2
+Hibernate: 
+    select
+        b1_0.book_id,
+        b1_0.author,
+        b1_0.book_name,
+        b1_0.status_id,
+        b1_0.genre,
+        b1_0.lending_cost,
+        b1_0.purchase_price 
+    from
+        inventory b1_0
+Hibernate: 
+    select
+        bs1_0.status_id,
+        bs1_0.description 
+    from
+        book_status bs1_0 
+    where
+        bs1_0.status_id=?
+Hibernate: 
+    select
+        b1_0.book_id,
+        b1_0.author,
+        b1_0.book_name,
+        b1_0.status_id,
+        b1_0.genre,
+        b1_0.lending_cost,
+        b1_0.purchase_price 
+    from
+        inventory b1_0
+Hibernate: 
+    select
+        bs1_0.status_id,
+        bs1_0.description 
+    from
+        book_status bs1_0 
+    where
+        bs1_0.status_id=?
+Hibernate: 
+    select
+        b1_0.book_id,
+        b1_0.author,
+        b1_0.book_name,
+        bs1_0.status_id,
+        bs1_0.description,
+        b1_0.genre,
+        b1_0.lending_cost,
+        b1_0.purchase_price 
+    from
+        inventory b1_0 
+    left join
+        book_status bs1_0 
+            on bs1_0.status_id=b1_0.status_id 
+    where
+        b1_0.book_id=?
+Hibernate: 
+    select
+        b1_0.book_id,
+        b1_0.author,
+        b1_0.book_name,
+        bs1_0.status_id,
+        bs1_0.description,
+        b1_0.genre,
+        b1_0.lending_cost,
+        b1_0.purchase_price 
+    from
+        inventory b1_0 
+    left join
+        book_status bs1_0 
+            on bs1_0.status_id=b1_0.status_id 
+    where
+        b1_0.book_id=?
+Hibernate: 
+    select
+        b1_0.book_id,
+        b1_0.author,
+        b1_0.book_name,
+        bs1_0.status_id,
+        bs1_0.description,
+        b1_0.genre,
+        b1_0.lending_cost,
+        b1_0.purchase_price 
+    from
+        inventory b1_0 
+    left join
+        book_status bs1_0 
+            on bs1_0.status_id=b1_0.status_id 
+    where
+        b1_0.book_id=?
+Hibernate: 
+    select
+        b1_0.book_id,
+        b1_0.author,
+        b1_0.book_name,
+        bs1_0.status_id,
+        bs1_0.description,
+        b1_0.genre,
+        b1_0.lending_cost,
+        b1_0.purchase_price 
+    from
+        inventory b1_0 
+    left join
+        book_status bs1_0 
+            on bs1_0.status_id=b1_0.status_id 
+    where
+        b1_0.book_id=?
+Hibernate: 
+    select
+        b1_0.book_id,
+        b1_0.author,
+        b1_0.book_name,
+        b1_0.status_id,
+        b1_0.genre,
+        b1_0.lending_cost,
+        b1_0.purchase_price 
+    from
+        inventory b1_0
+Hibernate: 
+    select
+        bs1_0.status_id,
+        bs1_0.description 
+    from
+        book_status bs1_0 
+    where
+        bs1_0.status_id=?
+Hibernate: 
+    select
+        b1_0.book_id,
+        b1_0.author,
+        b1_0.book_name,
+        b1_0.status_id,
+        b1_0.genre,
+        b1_0.lending_cost,
+        b1_0.purchase_price 
+    from
+        inventory b1_0
+Hibernate: 
+    select
+        bs1_0.status_id,
+        bs1_0.description 
+    from
+        book_status bs1_0 
+    where
+        bs1_0.status_id=?
+Hibernate: 
+    select
+        count(*) 
+    from
+        communities c1_0
+Hibernate: 
+    select
+        count(*) 
+    from
+        customers c1_0
+Hibernate: 
+    select
+        count(*) 
+    from
+        inventory b1_0
+Hibernate: 
+    select
+        count(*) 
+    from
+        communities c1_0
+Hibernate: 
+    select
+        count(*) 
+    from
+        customers c1_0
+Hibernate: 
+    SELECT
+        count(*) 
+    FROM
+        INVENTORY 
+    WHERE
+        status_id = 2
+Hibernate: 
+    SELECT
+        * 
+    FROM
+        transactions t 
+    ORDER BY
+        PICKUP_DATE DESC 
+    limit
+        5
+Hibernate: 
+    select
+        count(*) 
+    from
+        inventory b1_0
+Hibernate: 
+    SELECT
+        count(*) 
+    FROM
+        INVENTORY 
+    WHERE
+        status_id = 2
+Hibernate: 
+    select
+        c1_0.customer_id,
+        c1_0.block_number,
+        c1_0.community_id,
+        c2_0.community_id,
+        c2_0.community_name,
+        c1_0.customer_name,
+        c1_0.mobile_number,
+        c1_0.unit_number 
+    from
+        customers c1_0 
+    join
+        communities c2_0 
+            on c2_0.community_id=c1_0.community_id 
+    where
+        c1_0.customer_id=?
+Hibernate: 
+    select
+        b1_0.book_id,
+        b1_0.author,
+        b1_0.book_name,
+        bs1_0.status_id,
+        bs1_0.description,
+        b1_0.genre,
+        b1_0.lending_cost,
+        b1_0.purchase_price 
+    from
+        inventory b1_0 
+    left join
+        book_status bs1_0 
+            on bs1_0.status_id=b1_0.status_id 
+    where
+        b1_0.book_id=?
+Hibernate: 
+    SELECT
+        * 
+    FROM
+        transactions t 
+    ORDER BY
+        PICKUP_DATE DESC 
+    limit
+        5
+Hibernate: 
+    select
+        c1_0.customer_id,
+        c1_0.block_number,
+        c1_0.community_id,
+        c2_0.community_id,
+        c2_0.community_name,
+        c1_0.customer_name,
+        c1_0.mobile_number,
+        c1_0.unit_number 
+    from
+        customers c1_0 
+    join
+        communities c2_0 
+            on c2_0.community_id=c1_0.community_id 
+    where
+        c1_0.customer_id=?
+Hibernate: 
+    select
+        b1_0.book_id,
+        b1_0.author,
+        b1_0.book_name,
+        bs1_0.status_id,
+        bs1_0.description,
+        b1_0.genre,
+        b1_0.lending_cost,
+        b1_0.purchase_price 
+    from
+        inventory b1_0 
+    left join
+        book_status bs1_0 
+            on bs1_0.status_id=b1_0.status_id 
+    where
+        b1_0.book_id=?
+Hibernate: 
+    select
+        c1_0.community_id,
+        c1_0.community_name 
+    from
+        communities c1_0
+Hibernate: 
+    select
+        c1_0.customer_id,
+        c1_0.block_number,
+        c1_0.community_id,
+        c1_0.customer_name,
+        c1_0.mobile_number,
+        c1_0.unit_number 
+    from
+        customers c1_0 
+    where
+        lower(c1_0.customer_name) like ? escape '' 
+        and c1_0.community_id=?
+Hibernate: 
+    select
+        c1_0.customer_id,
+        c1_0.block_number,
+        c1_0.community_id,
+        c1_0.customer_name,
+        c1_0.mobile_number,
+        c1_0.unit_number 
+    from
+        customers c1_0 
+    where
+        lower(c1_0.customer_name) like ? escape '' 
+        and c1_0.community_id=?
+Hibernate: 
+    select
+        c1_0.customer_id,
+        c1_0.block_number,
+        c1_0.community_id,
+        c1_0.customer_name,
+        c1_0.mobile_number,
+        c1_0.unit_number 
+    from
+        customers c1_0 
+    where
+        lower(c1_0.customer_name) like ? escape '' 
+        and c1_0.community_id=?
+Hibernate: 
+    SELECT
+        * 
+    FROM
+        transactions t 
+    ORDER BY
+        PICKUP_DATE DESC 
+    limit
+        5
+Hibernate: 
+    select
+        count(*) 
+    from
+        inventory b1_0
+Hibernate: 
+    select
+        count(*) 
+    from
+        communities c1_0
+Hibernate: 
+    select
+        count(*) 
+    from
+        customers c1_0
+Hibernate: 
+    SELECT
+        count(*) 
+    FROM
+        INVENTORY 
+    WHERE
+        status_id = 2
+Hibernate: 
+    select
+        c1_0.customer_id,
+        c1_0.block_number,
+        c1_0.community_id,
+        c2_0.community_id,
+        c2_0.community_name,
+        c1_0.customer_name,
+        c1_0.mobile_number,
+        c1_0.unit_number 
+    from
+        customers c1_0 
+    join
+        communities c2_0 
+            on c2_0.community_id=c1_0.community_id 
+    where
+        c1_0.customer_id=?
+Hibernate: 
+    select
+        b1_0.book_id,
+        b1_0.author,
+        b1_0.book_name,
+        bs1_0.status_id,
+        bs1_0.description,
+        b1_0.genre,
+        b1_0.lending_cost,
+        b1_0.purchase_price 
+    from
+        inventory b1_0 
+    left join
+        book_status bs1_0 
+            on bs1_0.status_id=b1_0.status_id 
+    where
+        b1_0.book_id=?
+Hibernate: 
+    select
+        count(*) 
+    from
+        communities c1_0
+Hibernate: 
+    select
+        count(*) 
+    from
+        customers c1_0
+Hibernate: 
+    select
+        count(*) 
+    from
+        inventory b1_0
+Hibernate: 
+    SELECT
+        count(*) 
+    FROM
+        INVENTORY 
+    WHERE
+        status_id = 2
+Hibernate: 
+    SELECT
+        * 
+    FROM
+        transactions t 
+    ORDER BY
+        PICKUP_DATE DESC 
+    limit
+        5
+Hibernate: 
+    select
+        c1_0.customer_id,
+        c1_0.block_number,
+        c1_0.community_id,
+        c2_0.community_id,
+        c2_0.community_name,
+        c1_0.customer_name,
+        c1_0.mobile_number,
+        c1_0.unit_number 
+    from
+        customers c1_0 
+    join
+        communities c2_0 
+            on c2_0.community_id=c1_0.community_id 
+    where
+        c1_0.customer_id=?
+Hibernate: 
+    select
+        b1_0.book_id,
+        b1_0.author,
+        b1_0.book_name,
+        bs1_0.status_id,
+        bs1_0.description,
+        b1_0.genre,
+        b1_0.lending_cost,
+        b1_0.purchase_price 
+    from
+        inventory b1_0 
+    left join
+        book_status bs1_0 
+            on bs1_0.status_id=b1_0.status_id 
+    where
+        b1_0.book_id=?
+Hibernate: 
+    select
+        count(*) 
+    from
+        inventory b1_0
+Hibernate: 
+    SELECT
+        count(*) 
+    FROM
+        INVENTORY 
+    WHERE
+        status_id = 2
+Hibernate: 
+    SELECT
+        * 
+    FROM
+        transactions t 
+    ORDER BY
+        PICKUP_DATE DESC 
+    limit
+        5
+Hibernate: 
+    select
+        count(*) 
+    from
+        communities c1_0
+Hibernate: 
+    select
+        count(*) 
+    from
+        customers c1_0
+Hibernate: 
+    select
+        c1_0.customer_id,
+        c1_0.block_number,
+        c1_0.community_id,
+        c2_0.community_id,
+        c2_0.community_name,
+        c1_0.customer_name,
+        c1_0.mobile_number,
+        c1_0.unit_number 
+    from
+        customers c1_0 
+    join
+        communities c2_0 
+            on c2_0.community_id=c1_0.community_id 
+    where
+        c1_0.customer_id=?
+Hibernate: 
+    select
+        b1_0.book_id,
+        b1_0.author,
+        b1_0.book_name,
+        bs1_0.status_id,
+        bs1_0.description,
+        b1_0.genre,
+        b1_0.lending_cost,
+        b1_0.purchase_price 
+    from
+        inventory b1_0 
+    left join
+        book_status bs1_0 
+            on bs1_0.status_id=b1_0.status_id 
+    where
+        b1_0.book_id=?
+Hibernate: 
+    select
+        count(*) 
+    from
+        inventory b1_0
+Hibernate: 
+    select
+        count(*) 
+    from
+        communities c1_0
+Hibernate: 
+    SELECT
+        count(*) 
+    FROM
+        INVENTORY 
+    WHERE
+        status_id = 2
+Hibernate: 
+    select
+        count(*) 
+    from
+        customers c1_0
+Hibernate: 
+    SELECT
+        * 
+    FROM
+        transactions t 
+    ORDER BY
+        PICKUP_DATE DESC 
+    limit
+        5
+Hibernate: 
+    select
+        c1_0.customer_id,
+        c1_0.block_number,
+        c1_0.community_id,
+        c2_0.community_id,
+        c2_0.community_name,
+        c1_0.customer_name,
+        c1_0.mobile_number,
+        c1_0.unit_number 
+    from
+        customers c1_0 
+    join
+        communities c2_0 
+            on c2_0.community_id=c1_0.community_id 
+    where
+        c1_0.customer_id=?
+Hibernate: 
+    select
+        b1_0.book_id,
+        b1_0.author,
+        b1_0.book_name,
+        bs1_0.status_id,
+        bs1_0.description,
+        b1_0.genre,
+        b1_0.lending_cost,
+        b1_0.purchase_price 
+    from
+        inventory b1_0 
+    left join
+        book_status bs1_0 
+            on bs1_0.status_id=b1_0.status_id 
+    where
+        b1_0.book_id=?
+Hibernate: 
+    select
+        c1_0.community_id,
+        c1_0.community_name 
+    from
+        communities c1_0
+Hibernate: 
+    select
+        c1_0.community_id,
+        c1_0.community_name 
+    from
+        communities c1_0
+Hibernate: 
+    select
+        count(*) 
+    from
+        customers c1_0
+Hibernate: 
+    SELECT
+        * 
+    FROM
+        transactions t 
+    ORDER BY
+        PICKUP_DATE DESC 
+    limit
+        5
+Hibernate: 
+    select
+        count(*) 
+    from
+        communities c1_0
+Hibernate: 
+    select
+        count(*) 
+    from
+        inventory b1_0
+Hibernate: 
+    SELECT
+        count(*) 
+    FROM
+        INVENTORY 
+    WHERE
+        status_id = 2
+Hibernate: 
+    select
+        count(*) 
+    from
+        customers c1_0
+Hibernate: 
+    select
+        count(*) 
+    from
+        inventory b1_0
+Hibernate: 
+    select
+        c1_0.customer_id,
+        c1_0.block_number,
+        c1_0.community_id,
+        c2_0.community_id,
+        c2_0.community_name,
+        c1_0.customer_name,
+        c1_0.mobile_number,
+        c1_0.unit_number 
+    from
+        customers c1_0 
+    join
+        communities c2_0 
+            on c2_0.community_id=c1_0.community_id 
+    where
+        c1_0.customer_id=?
+Hibernate: 
+    select
+        count(*) 
+    from
+        communities c1_0
+Hibernate: 
+    SELECT
+        count(*) 
+    FROM
+        INVENTORY 
+    WHERE
+        status_id = 2
+Hibernate: 
+    select
+        b1_0.book_id,
+        b1_0.author,
+        b1_0.book_name,
+        bs1_0.status_id,
+        bs1_0.description,
+        b1_0.genre,
+        b1_0.lending_cost,
+        b1_0.purchase_price 
+    from
+        inventory b1_0 
+    left join
+        book_status bs1_0 
+            on bs1_0.status_id=b1_0.status_id 
+    where
+        b1_0.book_id=?
+Hibernate: 
+    SELECT
+        * 
+    FROM
+        transactions t 
+    ORDER BY
+        PICKUP_DATE DESC 
+    limit
+        5
+Hibernate: 
+    select
+        c1_0.customer_id,
+        c1_0.block_number,
+        c1_0.community_id,
+        c2_0.community_id,
+        c2_0.community_name,
+        c1_0.customer_name,
+        c1_0.mobile_number,
+        c1_0.unit_number 
+    from
+        customers c1_0 
+    join
+        communities c2_0 
+            on c2_0.community_id=c1_0.community_id 
+    where
+        c1_0.customer_id=?
+Hibernate: 
+    select
+        b1_0.book_id,
+        b1_0.author,
+        b1_0.book_name,
+        bs1_0.status_id,
+        bs1_0.description,
+        b1_0.genre,
+        b1_0.lending_cost,
+        b1_0.purchase_price 
+    from
+        inventory b1_0 
+    left join
+        book_status bs1_0 
+            on bs1_0.status_id=b1_0.status_id 
+    where
+        b1_0.book_id=?
+Hibernate: 
+    select
+        c1_0.community_id,
+        c1_0.community_name 
+    from
+        communities c1_0
+Hibernate: 
+    select
+        count(*) 
+    from
+        inventory b1_0
+Hibernate: 
+    select
+        count(*) 
+    from
+        customers c1_0
+Hibernate: 
+    SELECT
+        * 
+    FROM
+        transactions t 
+    ORDER BY
+        PICKUP_DATE DESC 
+    limit
+        5
+Hibernate: 
+    select
+        count(*) 
+    from
+        communities c1_0
+Hibernate: 
+    SELECT
+        count(*) 
+    FROM
+        INVENTORY 
+    WHERE
+        status_id = 2
+Hibernate: 
+    select
+        c1_0.customer_id,
+        c1_0.block_number,
+        c1_0.community_id,
+        c2_0.community_id,
+        c2_0.community_name,
+        c1_0.customer_name,
+        c1_0.mobile_number,
+        c1_0.unit_number 
+    from
+        customers c1_0 
+    join
+        communities c2_0 
+            on c2_0.community_id=c1_0.community_id 
+    where
+        c1_0.customer_id=?
+Hibernate: 
+    select
+        count(*) 
+    from
+        customers c1_0
+Hibernate: 
+    select
+        b1_0.book_id,
+        b1_0.author,
+        b1_0.book_name,
+        bs1_0.status_id,
+        bs1_0.description,
+        b1_0.genre,
+        b1_0.lending_cost,
+        b1_0.purchase_price 
+    from
+        inventory b1_0 
+    left join
+        book_status bs1_0 
+            on bs1_0.status_id=b1_0.status_id 
+    where
+        b1_0.book_id=?
+Hibernate: 
+    select
+        count(*) 
+    from
+        communities c1_0
+Hibernate: 
+    select
+        count(*) 
+    from
+        inventory b1_0
+Hibernate: 
+    SELECT
+        count(*) 
+    FROM
+        INVENTORY 
+    WHERE
+        status_id = 2
+Hibernate: 
+    SELECT
+        * 
+    FROM
+        transactions t 
+    ORDER BY
+        PICKUP_DATE DESC 
+    limit
+        5
+Hibernate: 
+    select
+        c1_0.customer_id,
+        c1_0.block_number,
+        c1_0.community_id,
+        c2_0.community_id,
+        c2_0.community_name,
+        c1_0.customer_name,
+        c1_0.mobile_number,
+        c1_0.unit_number 
+    from
+        customers c1_0 
+    join
+        communities c2_0 
+            on c2_0.community_id=c1_0.community_id 
+    where
+        c1_0.customer_id=?
+Hibernate: 
+    select
+        b1_0.book_id,
+        b1_0.author,
+        b1_0.book_name,
+        bs1_0.status_id,
+        bs1_0.description,
+        b1_0.genre,
+        b1_0.lending_cost,
+        b1_0.purchase_price 
+    from
+        inventory b1_0 
+    left join
+        book_status bs1_0 
+            on bs1_0.status_id=b1_0.status_id 
+    where
+        b1_0.book_id=?
+Hibernate: 
+    select
+        c1_0.community_id,
+        c1_0.community_name 
+    from
+        communities c1_0
+Hibernate: 
+    select
+        b1_0.book_id,
+        b1_0.author,
+        b1_0.book_name,
+        b1_0.status_id,
+        b1_0.genre,
+        b1_0.lending_cost,
+        b1_0.purchase_price 
+    from
+        inventory b1_0
+Hibernate: 
+    select
+        bs1_0.status_id,
+        bs1_0.description 
+    from
+        book_status bs1_0 
+    where
+        bs1_0.status_id=?
+Hibernate: 
+    select
+        b1_0.book_id,
+        b1_0.author,
+        b1_0.book_name,
+        b1_0.status_id,
+        b1_0.genre,
+        b1_0.lending_cost,
+        b1_0.purchase_price 
+    from
+        inventory b1_0
+Hibernate: 
+    select
+        bs1_0.status_id,
+        bs1_0.description 
+    from
+        book_status bs1_0 
+    where
+        bs1_0.status_id=?
+Hibernate: 
+    select
+        c1_0.community_id,
+        c1_0.community_name 
+    from
+        communities c1_0
+Hibernate: 
+    select
+        b1_0.book_id,
+        b1_0.author,
+        b1_0.book_name,
+        b1_0.status_id,
+        b1_0.genre,
+        b1_0.lending_cost,
+        b1_0.purchase_price 
+    from
+        inventory b1_0
+Hibernate: 
+    select
+        bs1_0.status_id,
+        bs1_0.description 
+    from
+        book_status bs1_0 
+    where
+        bs1_0.status_id=?
+Hibernate: 
+    select
+        b1_0.book_id,
+        b1_0.author,
+        b1_0.book_name,
+        b1_0.status_id,
+        b1_0.genre,
+        b1_0.lending_cost,
+        b1_0.purchase_price 
+    from
+        inventory b1_0
+Hibernate: 
+    select
+        bs1_0.status_id,
+        bs1_0.description 
+    from
+        book_status bs1_0 
+    where
+        bs1_0.status_id=?
+Hibernate: 
+    select
+        c1_0.community_id,
+        c1_0.community_name 
+    from
+        communities c1_0
+Hibernate: 
+    select
+        c1_0.community_id,
+        c1_0.community_name 
+    from
+        communities c1_0
