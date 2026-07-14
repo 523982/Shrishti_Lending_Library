@@ -2,6 +2,7 @@ package com.library.controller;
 
 
 import com.library.dto.LendRequestDTO;
+import com.library.dto.ReturnRequestDTO;
 import com.library.dto.TransactionResponseDTO;
 import com.library.model.Transactions;
 import com.library.service.TransactionsService;
@@ -49,8 +50,10 @@ import java.util.List;
 	    // Endpoint to return a book
 	    @PutMapping("/{id}/return")
 	    //public ResponseEntity<TransactionResponseDTO> returnBook(@PathVariable(value = "id") String transactionId) {
-	    public ResponseEntity<TransactionResponseDTO> returnBook(@PathVariable(value = "id") Long bookId) {
-	    	TransactionResponseDTO updatedTransactions = transactionsService.returnBook(bookId);
+	    public ResponseEntity<TransactionResponseDTO> returnBook(
+	    		@PathVariable(value = "id") Long bookId,
+	    		@RequestBody(required = false) ReturnRequestDTO returnRequest) {
+	    	TransactionResponseDTO updatedTransactions = transactionsService.returnBook(bookId, returnRequest);
 	        return ResponseEntity.ok(updatedTransactions);
 	    }
 

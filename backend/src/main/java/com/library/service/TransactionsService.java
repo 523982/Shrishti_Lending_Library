@@ -1,6 +1,7 @@
 package com.library.service;
 
 import com.library.dto.LendRequestDTO;
+import com.library.dto.ReturnRequestDTO;
 import com.library.dto.TransactionResponseDTO;
 import com.library.enums.BookStatusEnum;
 import com.library.exception.ResourceNotFoundException;
@@ -16,7 +17,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -102,7 +105,7 @@ public class TransactionsService {
 	}
 
 	@Transactional
-	public TransactionResponseDTO returnBook(Long bookId) {
+	public TransactionResponseDTO returnBook(Long bookId, ReturnRequestDTO returnRequest) {
 		// public TransactionResponseDTO returnBook(String transactionId) {
 		// Transactions transactions = transactionsRepository.findById(transactionId)
 		BookStatus availableStatus = getOrCreateBookStatus(1L, BookStatusEnum.AVAILABLE);
@@ -115,7 +118,27 @@ public class TransactionsService {
 			throw new IllegalStateException("This book has already been returned.");
 		}
 
-		transactions.setReturnDate(LocalDate.now());
+		LocalDate returnDate = returnRequest != null && returnRequest.getReturnDate() != null
+				? returnRequest.getReturnDate()
+				: LocalDate.now();
+		if (returnDate.isBefore(transactions.getPickupDate())) {
+			throw new IllegalArgumentException("Return date cannot be before lend date.");
+		}
+
+		long days = ChronoUnit.DAYS.between(transactions.getPickupDate(), returnDate);
+		long weeks = Math.max(1L, (days + 6L) / 7L);
+		boolean isSwap = returnRequest != null ? returnRequest.isSwap() : transactions.isSwap();
+		BigDecimal finalAmount = transactions.getBooks().getLendingCost().multiply(BigDecimal.valueOf(weeks));
+		if (isSwap) {
+			finalAmount = finalAmount.divide(BigDecimal.valueOf(2), 2, RoundingMode.HALF_UP);
+		}
+
+		transactions.setReturnDate(returnDate);
+		transactions.setSwap(isSwap);
+		transactions.setTotalAmount(finalAmount);
+		if (!transactions.isPartiallyPaid()) {
+			transactions.setAmountPaid(finalAmount);
+		}
 
 		Books books = transactions.getBooks();
 		books.setBookStatus(availableStatus);
