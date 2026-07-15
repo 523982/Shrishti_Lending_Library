@@ -56,7 +56,7 @@ public class CustomersController {
     // Update a customer
     @PutMapping("/{id}")
     public ResponseEntity<Customers> updateCustomer(@PathVariable(value = "id") String customerId,
-                                                   @Valid @RequestBody CustomerRequestDTO customerDetails) {
+                                                   @Valid @RequestBody Customers customerDetails) {
         final Customers updatedCustomer = customerService.updateCustomer(customerId, customerDetails);
         return ResponseEntity.ok(updatedCustomer);
     }

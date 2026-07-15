@@ -66,10 +66,14 @@ public class CustomerService {
     	return customersRepository.count();
     }
 
-    public Customers updateCustomer(String customerId, CustomerRequestDTO customerDetails) {
+    public Customers updateCustomer(String customerId, Customers customerDetails) {
         Customers customer = getCustomerById(customerId); // Re-uses the findById logic
-        Communities community = communitiesRepository.findById(customerDetails.getCommunityId())
-                .orElseThrow(() -> new ResourceNotFoundException("Community not found with id: " + customerDetails.getCommunityId()));
+        Long communityId = customerDetails.getCommunity() == null ? null : customerDetails.getCommunity().getCommunityId();
+        if (communityId == null) {
+            throw new ResourceNotFoundException("Community is required to update customer: " + customerId);
+        }
+        Communities community = communitiesRepository.findById(communityId)
+                .orElseThrow(() -> new ResourceNotFoundException("Community not found with id: " + communityId));
 
         customer.setCustomerName(customerDetails.getCustomerName());
         customer.setBlockNumber(customerDetails.getBlockNumber());
