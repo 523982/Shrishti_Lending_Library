@@ -17,6 +17,7 @@ const BookCard = ({ book }) => {
             <div className="book-card-info">
                 <h3 className="book-card-title">{book.bookName}</h3>
                 <p className="book-card-author">by {book.author}</p>
+                {book.genre && <p className="book-card-genre">{book.genre}</p>}
                 <p className="book-card-lcost"> Lending Cost: Rs. {book.lendingCost}</p>
                 {/*<span className="book-card-status"> {book.status}                 </span>*/}
                 <span className={`status-badge ${statusClassName}`}>{statusText}</span>

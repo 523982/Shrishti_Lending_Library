@@ -6,3 +6,30 @@ Port 5173 is in use, trying another one...
 [2m7:55:21 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/BookList.jsx[22m
 [2m7:55:21 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/BookList.jsx[22m
 [2m7:55:45 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/BookDetailsPage.jsx[22m
+[2m9:10:07 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/App.jsx[22m
+[2m9:10:13 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/App.jsx[22m
+[2m9:10:33 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/AdminDashboard.jsx[22m
+[2m9:10:35 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/AdminDashboard.jsx[22m
+[2m9:10:55 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/Header.jsx[22m
+[2m9:10:56 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/Header.jsx[22m
+[2m9:11:16 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/AdminForms.css[22m
+[2m9:11:17 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/AdminForms.css[22m
+[2m9:52:54 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/context/AuthContext.jsx[22m
+[2m9:53:01 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/App.jsx[22m
+[2m9:53:07 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/Header.jsx[22m
+[2m9:53:13 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/Header.css[22m
+[2m9:53:20 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/ProtectedRoute.jsx[22m
+[2m9:53:28 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/AdminForms.css[22m
+[2m10:07:34 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/Header.jsx[22m
+[2m10:09:09 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/UserHomePage.jsx[22m
+[2m10:09:30 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/UserHomePage.css[22m
+[2m10:12:53 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/BookList.jsx[22m
+[2m10:12:53 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/BookList.jsx[22m
+[2m10:12:59 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/BookList.css[22m
+[2m10:13:06 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/BookCard.jsx[22m
+[2m10:13:13 pm[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/BookCard.css[22m
+[2m10:25:24 pm[22m [36m[1m[vite][22m[39m [32m.env.local changed, restarting server...[39m
+[2m10:25:25 pm[22m [36m[1m[vite][22m[39m [32m.env.local changed, restarting server...[39m
+[2m10:25:27 pm[22m [36m[1m[vite][22m[39m server restarted.
+[2m10:35:17 pm[22m [36m[1m[vite][22m[39m [32m.env.local changed, restarting server...[39m
+[2m10:35:18 pm[22m [36m[1m[vite][22m[39m server restarted.

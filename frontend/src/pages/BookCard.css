@@ -36,7 +36,18 @@
 .book-card-author {
     font-size: 0.9rem;
     color: #666;
-    margin: 0 0 1rem 0;
+    margin: 0 0 0.6rem 0;
+}
+
+.book-card-genre {
+    display: inline-block;
+    margin: 0 0 0.75rem 0;
+    padding: 0.2rem 0.55rem;
+    border-radius: 6px;
+    background: #eef6ff;
+    color: #0056b3;
+    font-size: 0.78rem;
+    font-weight: 700;
 }
 
 .book-card-status {

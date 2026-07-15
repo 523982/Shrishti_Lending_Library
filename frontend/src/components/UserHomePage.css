@@ -10,7 +10,9 @@
 }
 
 .home-page .welcome-title,
-.home-page .welcome-subtitle {
+.home-page .welcome-subtitle,
+.home-page .guest-stats,
+.home-page .browse-cta {
     opacity: 0;
     animation: fadeInUp 0.8s ease-out forwards;
     animation-fill-mode: forwards;
@@ -24,8 +26,67 @@
     animation-delay: 1.9s;
 }
 
+.home-page .guest-stats {
+    animation-delay: 2.1s;
+}
+
+.home-page .browse-cta {
+    animation-delay: 2.3s;
+}
+
 .page-container {
     text-align: center;
     padding: 4rem 2rem;
 }
 
+.guest-stats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1rem;
+    max-width: 720px;
+    margin: 2rem auto 1.5rem;
+}
+
+.guest-stat {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 1rem;
+    box-shadow: 0 4px 10px rgba(15, 23, 42, 0.06);
+}
+
+.guest-stat strong {
+    display: block;
+    color: #0f5132;
+    font-size: 1.8rem;
+    line-height: 1;
+}
+
+.guest-stat span {
+    display: block;
+    margin-top: 0.45rem;
+    color: #495057;
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+
+.browse-cta {
+    display: inline-block;
+    margin-top: 0.5rem;
+    padding: 0.8rem 1.2rem;
+    border-radius: 6px;
+    background-color: #007bff;
+    color: #ffffff;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.browse-cta:hover {
+    background-color: #0056b3;
+}
+
+@media (max-width: 680px) {
+    .guest-stats {
+        grid-template-columns: 1fr;
+    }
+}

@@ -2,9 +2,74 @@
     padding: 1.5rem;
 }
 
+.collection-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.collection-header h2 {
+    margin: 0;
+}
+
+.collection-header p {
+    margin: 0.4rem 0 0;
+    color: #5b6472;
+    font-weight: 600;
+}
+
+.book-filters {
+    display: flex;
+    align-items: flex-end;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.book-filters label {
+    display: grid;
+    gap: 0.35rem;
+    color: #343a40;
+    font-size: 0.9rem;
+    font-weight: 700;
+    text-align: left;
+}
+
+.book-filters select {
+    min-width: 170px;
+    padding: 0.6rem 0.7rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #212529;
+    font-size: 0.95rem;
+}
+
+.book-filters button {
+    min-height: 40px;
+    padding: 0.6rem 0.9rem;
+    border: 1px solid #007bff;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #0056b3;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.book-filters button:hover {
+    background: #eef6ff;
+}
+
 .source-data-note {
     color: #5b6472;
     margin: 0 0 1rem;
+}
+
+.no-books-message {
+    margin: 1rem 0;
+    color: #5b6472;
+    font-weight: 600;
 }
 
 .book-list {
@@ -14,3 +79,19 @@
     gap: 1.5rem;
 }
 
+@media (max-width: 760px) {
+    .collection-header {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .book-filters {
+        align-items: stretch;
+    }
+
+    .book-filters label,
+    .book-filters select,
+    .book-filters button {
+        width: 100%;
+    }
+}

@@ -7,6 +7,7 @@ import BookDetailsPage from './pages/BookDetailsPage';
 import HomePage from './components/HomePage';
 import Community from './components/Community'; // Assuming Community is in components
 import ProtectedRoute from './components/ProtectedRoute';
+import LoginPage from './pages/LoginPage';
 import BookActionsPage from './pages/BookActions';
 import CustomerActionsPage from './pages/CustomerActions';
 import AddCustomerPage from './pages/AddCustomerPage';
@@ -29,6 +30,7 @@ function App() {
             <Route path="/browse" element={<BookList />} />
             <Route path="/books/:bookId" element={<BookDetailsPage />} />
             <Route path="/community" element={<Community />} />
+            <Route path="/login" element={<LoginPage />} />
                         {/* Protected Admin Routes */}
                         <Route element={<ProtectedRoute />}>
                         <Route path="/admin/books" element={<BookActionsPage />} />

@@ -6,8 +6,7 @@ const ProtectedRoute = () => {
     const { userRole } = useAuth();
 
     if (userRole !== 'admin') {
-        // If user is not an admin, redirect them to the home page
-        return <Navigate to="/" replace />;
+        return <Navigate to="/login" replace />;
     }
 
     // If user is an admin, render the child routes

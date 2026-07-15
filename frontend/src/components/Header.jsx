@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import './Header.css';
 
 const Header = () => {
-    const { userRole, loginAsAdmin, logout } = useAuth();
+    const { userRole, username, logout } = useAuth();
 
     return (
         <header className="app-header">
@@ -14,10 +14,10 @@ const Header = () => {
             <div className="header-right">
                 <nav>
                     <NavLink to="/browse">Browse Books</NavLink>
-                    <NavLink to="/community">Community</NavLink>
                     {userRole === 'admin' && (
                         <>
                             <NavLink to="/admin/books">Manage Books</NavLink>
+                            <NavLink to="/admin/customers">Manage Customers</NavLink>
                             <NavLink to="/admin/add-community">Add Community</NavLink>
                             <NavLink to="/admin/reports">Reports</NavLink>
                         </>
@@ -25,9 +25,12 @@ const Header = () => {
                 </nav>
                 <div className="auth-section">
                     {userRole === 'admin' ? (
-                        <button onClick={logout} className="auth-button">Logout</button>
+                        <>
+                            <span className="admin-user">{username ? `Admin: ${username}` : 'Admin'}</span>
+                            <button onClick={logout} className="auth-button">Logout</button>
+                        </>
                     ) : (
-                        <button onClick={loginAsAdmin} className="auth-button">Login as Admin</button>
+                        <Link to="/login" className="auth-button">Login</Link>
                     )}
                 </div>
             </div>
