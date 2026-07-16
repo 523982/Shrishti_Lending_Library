@@ -72,6 +72,12 @@
     font-weight: 600;
 }
 
+.api-error-message {
+    margin: 1rem 0;
+    color: #dc3545;
+    font-weight: 700;
+}
+
 .book-list {
     display: grid;
     /* This creates a responsive grid that adds/removes columns based on screen width */

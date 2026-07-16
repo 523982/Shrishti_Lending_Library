@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import apiClient from '../services/api';
+import apiClient, { API_BASE_URL } from '../services/api';
 import BookCard from '../pages/BookCard';
 import '../pages/BookList.css'; // CSS for the grid layout
 
@@ -25,6 +25,21 @@ const getBookGenre = (book) => {
     return genre || 'Uncategorized';
 };
 
+const getBooksApiErrorMessage = (err) => {
+    const booksEndpoint = `${API_BASE_URL}/books`;
+
+    if (err.response) {
+        const detail = err.response.data?.message || err.response.data?.error || err.response.statusText;
+        return `Failed to load books. ${booksEndpoint} returned ${err.response.status}${detail ? `: ${detail}` : ''}.`;
+    }
+
+    if (err.request) {
+        return `Failed to load books. Could not reach ${booksEndpoint}. Check Render deploy status and CORS for this Vercel site.`;
+    }
+
+    return `Failed to load books. ${err.message || 'Unexpected API error.'}`;
+};
+
 const BookList = () => {
     const [books, setBooks] = useState([]);
     const [error, setError] = useState(null);
@@ -44,7 +59,7 @@ const BookList = () => {
             } catch (err) {
                 console.error("Error fetching books:", err);
                 setBooks([]);
-                setError("Failed to load books from the inventory API.");
+                setError(getBooksApiErrorMessage(err));
             } finally {
                 setLoading(false);
             }
@@ -105,7 +120,7 @@ const BookList = () => {
                 </div>
             </div>
             {loading && <div>Loading books...</div>}
-            {error && <div style={{ color: 'red' }}>{error}</div>}
+            {error && <div className="api-error-message">{error}</div>}
             {!loading && !error && filteredBooks.length === 0 && (
                 <div className="no-books-message">No books match the selected filters.</div>
             )}

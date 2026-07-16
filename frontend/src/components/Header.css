@@ -3,6 +3,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 1rem;
     padding: 1rem 2rem;
     background-color: #1a1a1a; /* Dark background for the "appearing from dark" effect */
     color: white;
@@ -14,14 +15,22 @@
     text-decoration: none;
     font-size: 1.5rem;
     font-weight: bold;
+    line-height: 1.2;
+}
+
+.app-header nav {
+    display: flex;
+    align-items: center;
+    gap: 25px;
+    flex-wrap: wrap;
 }
 
 .app-header nav a {
     color: #a0deff; /* A visible light blue color */
     text-decoration: none;
-    margin-left: 25px;
     font-size: 1.1rem;
     transition: color 0.3s ease;
+    white-space: nowrap;
 }
 
 .app-header nav a:hover,
@@ -61,13 +70,16 @@
 .header-right {
     display: flex;
     align-items: center;
+    justify-content: flex-end;
+    gap: 30px;
+    min-width: 0;
 }
 
 .auth-section {
-    margin-left: 30px;
     display: flex;
     align-items: center;
     gap: 12px;
+    flex-shrink: 0;
 }
 
 .auth-button {
@@ -92,5 +104,67 @@
     font-weight: 600;
     color: #f8f9fa;
     white-space: nowrap;
+}
+
+@media (max-width: 760px) {
+    .app-header {
+        align-items: stretch;
+        flex-direction: column;
+        padding: 0.9rem 1rem;
+    }
+
+    .app-header .logo a {
+        display: block;
+        font-size: 1.4rem;
+    }
+
+    .header-right {
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        width: 100%;
+    }
+
+    .app-header nav {
+        gap: 0.75rem;
+        min-width: 0;
+    }
+
+    .app-header nav a {
+        font-size: 1rem;
+    }
+
+    .auth-section {
+        margin-left: auto;
+    }
+
+    .auth-button {
+        min-height: 42px;
+        padding: 9px 14px;
+    }
+}
+
+@media (max-width: 480px) {
+    .app-header {
+        gap: 0.85rem;
+    }
+
+    .header-right {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .app-header nav {
+        width: 100%;
+    }
+
+    .app-header nav a {
+        line-height: 1.2;
+    }
+
+    .auth-section {
+        justify-content: flex-start;
+        margin-left: 0;
+    }
 }
 
