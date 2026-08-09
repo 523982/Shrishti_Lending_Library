@@ -31,6 +31,9 @@ import org.springframework.stereotype.Repository;
 
 		List<Transactions> findByCustomersCustomerIdAndSubscriptionStatus(String customerId, String subscriptionStatus);
 
+		@Query("select t from Transactions t where t.customers.customerId = :customerId and t.subscriptionTxnId is not null and (t.subscriptionStatus is null or t.subscriptionStatus = :subscriptionStatus)")
+		List<Transactions> findPotentialActiveSubscriptionRows(@Param("customerId") String customerId, @Param("subscriptionStatus") String subscriptionStatus);
+
 		List<Transactions> findBySubscriptionTxnIdOrderByBundleBookNoAsc(String subscriptionTxnId);
 	}
 

@@ -109,14 +109,19 @@ public class TransactionsService {
 		book.setBookStatus(unavailableStatus);
 		booksRepository.save(book);
 
-		if (lendRequest.getSubscriptionTxnId() != null && !lendRequest.getSubscriptionTxnId().isBlank()) {
+		boolean usingExistingSubscription = lendRequest.getSubscriptionTxnId() != null && !lendRequest.getSubscriptionTxnId().isBlank();
+		List<Transactions> activeSubscriptionRows = usingExistingSubscription
+				? List.of()
+				: getActiveSubscriptionRows(customer.getCustomerId(), pickupDate);
+
+		if (!usingExistingSubscription && !activeSubscriptionRows.isEmpty()) {
+			throw new IllegalStateException("Customer has an active subscription. Use Active Subscription for the next book.");
+		}
+
+		if (usingExistingSubscription) {
 			applyExistingSubscription(transaction, lendRequest.getSubscriptionTxnId(), customer, book, pickupDate);
 		} else if (lendRequest.getOfferId() != null) {
 			Offers offer = getValidOffer(lendRequest.getOfferId(), customer, pickupDate);
-			List<Transactions> activeSubscriptionRows = getActiveSubscriptionRows(customer.getCustomerId(), pickupDate);
-			if (!activeSubscriptionRows.isEmpty()) {
-				throw new IllegalStateException("Customer already has an active subscription. Close or expire it before applying another offer.");
-			}
 
 			if (offer.getOfferType() == OfferType.BUNDLE) {
 				startSubscription(transaction, offer, book, pickupDate);
@@ -335,7 +340,7 @@ public class TransactionsService {
 
 	private List<Transactions> getActiveSubscriptionRows(String customerId, LocalDate effectiveDate) {
 		List<Transactions> activeRows = transactionsRepository
-				.findByCustomersCustomerIdAndSubscriptionStatus(customerId, SUBSCRIPTION_ACTIVE)
+				.findPotentialActiveSubscriptionRows(customerId, SUBSCRIPTION_ACTIVE)
 				.stream()
 				.filter(transaction -> transaction.getSubscriptionTxnId() != null)
 				.collect(Collectors.toList());
