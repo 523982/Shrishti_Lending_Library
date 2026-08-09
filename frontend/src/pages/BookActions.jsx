@@ -12,6 +12,17 @@ const calculateReturnSummary = (transaction, returnDetails) => {
             totalCost: 0,
             amountPaid: 0,
             balanceDue: 0,
+            isSubscription: false,
+        };
+    }
+
+    if (transaction.subscriptionTxnId) {
+        return {
+            billedWeeks: 0,
+            totalCost: Number(transaction.totalAmount) || 0,
+            amountPaid: Number(transaction.amountPaid) || 0,
+            balanceDue: 0,
+            isSubscription: true,
         };
     }
 
@@ -21,7 +32,11 @@ const calculateReturnSummary = (transaction, returnDetails) => {
     const days = Math.ceil((returnDate - pickupDate) / dayMs);
     const billedWeeks = Math.max(1, Math.ceil(days / 7));
     const weeklyRate = Number(transaction.lendingCost) || 0;
-    const totalCost = (returnDetails.isSwap ? weeklyRate / 2 : weeklyRate) * billedWeeks;
+    const normalCost = (returnDetails.isSwap ? weeklyRate / 2 : weeklyRate) * billedWeeks;
+    const discountRate = Number(transaction.normalAmount) > 0
+        ? (Number(transaction.discountAmount) || 0) / Number(transaction.normalAmount)
+        : 0;
+    const totalCost = Math.max(0, normalCost - (normalCost * discountRate));
     const amountPaid = Number(transaction.amountPaid) || 0;
     const balanceDue = Math.max(0, totalCost - amountPaid);
 
@@ -30,6 +45,7 @@ const calculateReturnSummary = (transaction, returnDetails) => {
         totalCost,
         amountPaid,
         balanceDue,
+        isSubscription: false,
     };
 };
 
@@ -39,6 +55,75 @@ const getTodayInputValue = () => {
     const month = String(today.getMonth() + 1).padStart(2, '0');
     const day = String(today.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
+};
+
+const getInitialLendDetails = () => ({
+    pickupDate: getTodayInputValue(),
+    isSwap: false,
+    isPartiallyPaid: false,
+    amountPaid: 0,
+    offerMode: 'NORMAL',
+});
+
+const currency = new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    maximumFractionDigits: 0,
+});
+
+const getCustomerCommunityId = (customer) => (
+    customer?.community?.communityId ||
+    customer?.communityId ||
+    ''
+);
+
+const describeOffer = (offer) => {
+    if (!offer) return '';
+    if (offer.offerType === 'BUNDLE') {
+        return `${offer.bundleBookCount || 0} books for ${currency.format(Number(offer.bundlePrice) || 0)} in ${offer.bundleDurationDays || 0} days`;
+    }
+    return `${Number(offer.discountPercent) || 0}% off during the offer period`;
+};
+
+const getOfferPreview = (selectedBook, lendDetails, activeOffer, activeSubscription) => {
+    const lendingCost = Number(selectedBook?.lendingCost) || 0;
+
+    if (lendDetails.offerMode === 'START_SUBSCRIPTION' && activeOffer?.offerType === 'BUNDLE') {
+        const perBookRevenue = (Number(activeOffer.bundlePrice) || 0) / Math.max(1, Number(activeOffer.bundleBookCount) || 1);
+        return {
+            label: 'Subscription upfront payment',
+            totalAmount: Number(activeOffer.bundlePrice) || 0,
+            amountPaid: Number(activeOffer.bundlePrice) || 0,
+            bookRevenueAmount: perBookRevenue,
+        };
+    }
+
+    if (lendDetails.offerMode === 'USE_SUBSCRIPTION' && activeSubscription?.canUseSubscription) {
+        return {
+            label: 'Covered by active subscription',
+            totalAmount: 0,
+            amountPaid: 0,
+            bookRevenueAmount: Number(activeSubscription.bookRevenueAmount) || 0,
+        };
+    }
+
+    if (lendDetails.offerMode === 'PERCENT' && activeOffer?.offerType === 'PERCENT') {
+        const discount = lendingCost * ((Number(activeOffer.discountPercent) || 0) / 100);
+        const finalAmount = Math.max(0, lendingCost - discount);
+        return {
+            label: 'Discounted first-week amount',
+            totalAmount: finalAmount,
+            amountPaid: lendDetails.isPartiallyPaid ? Number(lendDetails.amountPaid) || 0 : finalAmount,
+            bookRevenueAmount: finalAmount,
+        };
+    }
+
+    return {
+        label: 'Normal first-week amount',
+        totalAmount: lendingCost,
+        amountPaid: lendDetails.isPartiallyPaid ? Number(lendDetails.amountPaid) || 0 : lendingCost,
+        bookRevenueAmount: lendingCost,
+    };
 };
 
 
@@ -78,11 +163,11 @@ const BookActionsPage = () => {
     const [lendCustomerResults, setLendCustomerResults] = useState([]);
     const [selectedLendCustomer, setSelectedLendCustomer] = useState(null);
     const [loadingLendData, setLoadingLendData] = useState(true);
+    const [activeOffer, setActiveOffer] = useState(null);
+    const [activeSubscription, setActiveSubscription] = useState(null);
+    const [loadingOfferContext, setLoadingOfferContext] = useState(false);
     const [lendDetails, setLendDetails] = useState({
-        pickupDate: new Date().toISOString().split('T')[0],
-        isSwap: false,
-        isPartiallyPaid: false,
-        amountPaid: 0,
+        ...getInitialLendDetails(),
     });
 
         // State for the "Return Book" functionality
@@ -105,11 +190,6 @@ const BookActionsPage = () => {
         if (location.state?.newCustomer) {
             setCurrentAction('lend'); // Ensure the lend tab is active
             handleSelectCustomer(location.state.newCustomer);
-        }
-        // If we came back from adding a customer for the return flow
-        if (location.state?.returnFlowCustomer) {
-            handleSelectReturnCustomer(location.state.returnFlowCustomer);
-        
         }
         }, [location.state]);
 
@@ -136,7 +216,12 @@ const BookActionsPage = () => {
         setLendDetails(prev => ({
             ...prev,
             [name]: type === 'checkbox' ? checked : value,
-            }));
+            ...(
+                name === 'offerMode' && ['START_SUBSCRIPTION', 'USE_SUBSCRIPTION'].includes(value)
+                    ? { isSwap: false, isPartiallyPaid: false, amountPaid: 0 }
+                    : {}
+            ),
+        }));
         };
 
         const handleAddBookFromLend = () => {
@@ -212,6 +297,50 @@ const BookActionsPage = () => {
         return () => clearTimeout(debounceTimer);
     }, [lendCustomerQuery, lendCommunityFilter, currentAction]);
 
+    useEffect(() => {
+        if (currentAction !== 'lend' || !selectedLendCustomer) {
+            setActiveOffer(null);
+            setActiveSubscription(null);
+            return;
+        }
+
+        const fetchOfferContext = async () => {
+            const communityId = getCustomerCommunityId(selectedLendCustomer);
+            try {
+                setLoadingOfferContext(true);
+                setError(null);
+
+                const subscriptionRequest = apiClient.get(`/transactions/customers/${selectedLendCustomer.customerId}/active-subscription`);
+                const offerRequest = communityId
+                    ? apiClient.get(`/offers/community/${communityId}/active?date=${lendDetails.pickupDate}`)
+                    : Promise.resolve({ data: null });
+
+                const [subscriptionResponse, offerResponse] = await Promise.all([subscriptionRequest, offerRequest]);
+                const subscription = subscriptionResponse.data?.hasActiveSubscription ? subscriptionResponse.data : null;
+                const offer = offerResponse.status === 204 ? null : offerResponse.data;
+
+                setActiveSubscription(subscription);
+                setActiveOffer(offer || null);
+                setLendDetails(prev => ({
+                    ...prev,
+                    offerMode: subscription?.canUseSubscription ? 'USE_SUBSCRIPTION' : 'NORMAL',
+                    isSwap: subscription?.canUseSubscription ? false : prev.isSwap,
+                    isPartiallyPaid: subscription?.canUseSubscription ? false : prev.isPartiallyPaid,
+                    amountPaid: subscription?.canUseSubscription ? 0 : prev.amountPaid,
+                }));
+            } catch (err) {
+                console.error('Error fetching offer context:', err);
+                setActiveOffer(null);
+                setActiveSubscription(null);
+                setError(err.response?.data?.message || 'Failed to load offer/subscription details for this customer.');
+            } finally {
+                setLoadingOfferContext(false);
+            }
+        };
+
+        fetchOfferContext();
+    }, [currentAction, selectedLendCustomer, lendDetails.pickupDate]);
+
     // Debounced search for LENT books in the Return tab
     useEffect(() => {
         if (currentAction !== 'return' || returnBookQuery.trim() === '') {
@@ -282,7 +411,10 @@ const BookActionsPage = () => {
                         // When a book is selected for lending, set its cost as the total amount
             // and reset the payment details.
             if (currentAction === 'lend') {
-                setLendDetails({ pickupDate: new Date().toISOString().split('T')[0], isSwap: false, isPartiallyPaid: false, amountPaid: 0 });
+                setLendDetails({
+                    ...getInitialLendDetails(),
+                    offerMode: activeSubscription?.canUseSubscription ? 'USE_SUBSCRIPTION' : 'NORMAL',
+                });
             }
         };
 
@@ -296,13 +428,6 @@ const BookActionsPage = () => {
             setLendCustomerQuery(customer.customerName);
             setLendCustomerResults([]);
         };
-        const handleSelectReturnCustomer = (customer) => {
-            setCurrentAction('return');
-            setSelectedReturnCustomer(customer);
-            setReturnCustomerQuery(customer.customerName);
-            setReturnCustomerResults([]);
-        };
-
         useEffect(() => {
             if (location.state?.adminBookAction === 'lend' && location.state?.book) {
                 const bookForLend = location.state.book;
@@ -312,7 +437,7 @@ const BookActionsPage = () => {
                 setSelectedBook(bookForLend);
                 setSearchQuery(bookForLend.bookName || '');
                 setSearchResults([]);
-                setLendDetails({ pickupDate: new Date().toISOString().split('T')[0], isSwap: false, isPartiallyPaid: false, amountPaid: 0 });
+                setLendDetails(getInitialLendDetails());
                 navigate(location.pathname, { replace: true, state: {} });
             }
 
@@ -355,7 +480,7 @@ const BookActionsPage = () => {
                 setSelectedBook(newBook);
                 setSearchQuery(newBook?.bookName || bookData.bookName);
                 setSearchResults([]);
-                setLendDetails({ pickupDate: new Date().toISOString().split('T')[0], isSwap: false, isPartiallyPaid: false, amountPaid: 0 });
+                setLendDetails(getInitialLendDetails());
                 setReturnToLendAfterAdd(false);
                 setCurrentAction('lend');
                 setSuccess(`Book "${newBook?.bookName || bookData.bookName}" added and selected for lending.`);
@@ -436,16 +561,26 @@ const BookActionsPage = () => {
         setSuccess(null);
 
         try {
+            const isSubscriptionMode = ['START_SUBSCRIPTION', 'USE_SUBSCRIPTION'].includes(lendDetails.offerMode);
+            const preview = getOfferPreview(selectedBook, lendDetails, activeOffer, activeSubscription);
                         // Construct the full payload expected by the backend
                         const payload = {
                 bookId: selectedBook.bookId,
                 customerId: selectedLendCustomer.customerId,
                 pickupDate: lendDetails.pickupDate,
                 totalAmount: selectedBook.lendingCost,
-                swap: lendDetails.isSwap,
-                partiallyPaid: lendDetails.isPartiallyPaid,
-                amountPaid: parseFloat(lendDetails.amountPaid) || 0,
+                swap: isSubscriptionMode ? false : lendDetails.isSwap,
+                partiallyPaid: isSubscriptionMode ? false : lendDetails.isPartiallyPaid,
+                amountPaid: isSubscriptionMode ? preview.amountPaid : parseFloat(lendDetails.amountPaid) || 0,
             };
+
+            if (lendDetails.offerMode === 'PERCENT' || lendDetails.offerMode === 'START_SUBSCRIPTION') {
+                payload.offerId = activeOffer?.offerId;
+            }
+
+            if (lendDetails.offerMode === 'USE_SUBSCRIPTION') {
+                payload.subscriptionTxnId = activeSubscription?.subscriptionTxnId;
+            }
 
             // Call the correct endpoint
             await apiClient.post('/transactions/lend', payload);
@@ -453,7 +588,9 @@ const BookActionsPage = () => {
             setSuccess(`Successfully lent "${selectedBook.bookName}" to ${selectedLendCustomer.customerName}.`);
             handleClearSelection();
             setSelectedLendCustomer(null);
-            setLendDetails({ pickupDate: new Date().toISOString().split('T')[0], isSwap: false, isPartiallyPaid: false, amountPaid: 0 }); // Reset form
+            setActiveOffer(null);
+            setActiveSubscription(null);
+            setLendDetails(getInitialLendDetails());
 
         } catch (err) {
             setError(err.response?.data?.message || "Failed to process transaction. Check API and payload.");
@@ -490,6 +627,9 @@ const BookActionsPage = () => {
             setError(err.response?.data?.message || "Failed to process return.");
         }
     };
+
+    const lendPreview = getOfferPreview(selectedBook, lendDetails, activeOffer, activeSubscription);
+    const isSubscriptionMode = ['START_SUBSCRIPTION', 'USE_SUBSCRIPTION'].includes(lendDetails.offerMode);
 
     return (
         <div className="admin-form-container">
@@ -690,9 +830,100 @@ const BookActionsPage = () => {
                             )}
                         </fieldset>
 
+                        <fieldset>
+                            <legend>3. Offer / Subscription</legend>
+                            {loadingOfferContext && <p>Checking customer offers...</p>}
+                            {!loadingOfferContext && selectedLendCustomer && (
+                                <>
+                                    {activeSubscription && (
+                                        <div className="offer-context-card">
+                                            <strong>Active Subscription</strong>
+                                            <p>{activeSubscription.offerName}</p>
+                                            <p>
+                                                Books used: {activeSubscription.booksUsed || 0} / {activeSubscription.bundleBookLimit || 0}
+                                                {' | '}Currently with customer: {activeSubscription.openBooks || 0}
+                                            </p>
+                                            <p>
+                                                Paid: {currency.format(Number(activeSubscription.amountPaid) || 0)}
+                                                {' | '}Valid till: {activeSubscription.subscriptionEndDate || '-'}
+                                            </p>
+                                            {!activeSubscription.canUseSubscription && (
+                                                <p className="offer-warning">This subscription cannot be used for another book.</p>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {activeOffer && !activeSubscription && (
+                                        <div className="offer-context-card">
+                                            <strong>Community Offer Available</strong>
+                                            <p>{activeOffer.offerName}</p>
+                                            <p>{describeOffer(activeOffer)}</p>
+                                        </div>
+                                    )}
+
+                                    {!activeOffer && !activeSubscription && (
+                                        <p>No active offer/subscription found for this customer.</p>
+                                    )}
+
+                                    <div className="offer-mode-list">
+                                        <label className="radio-group">
+                                            <input
+                                                type="radio"
+                                                name="offerMode"
+                                                value="NORMAL"
+                                                checked={lendDetails.offerMode === 'NORMAL'}
+                                                onChange={handleLendDetailsChange}
+                                            />
+                                            Normal Lending
+                                        </label>
+
+                                        {activeSubscription?.canUseSubscription && (
+                                            <label className="radio-group">
+                                                <input
+                                                    type="radio"
+                                                    name="offerMode"
+                                                    value="USE_SUBSCRIPTION"
+                                                    checked={lendDetails.offerMode === 'USE_SUBSCRIPTION'}
+                                                    onChange={handleLendDetailsChange}
+                                                />
+                                                Use Active Subscription
+                                            </label>
+                                        )}
+
+                                        {activeOffer?.offerType === 'PERCENT' && !activeSubscription && (
+                                            <label className="radio-group">
+                                                <input
+                                                    type="radio"
+                                                    name="offerMode"
+                                                    value="PERCENT"
+                                                    checked={lendDetails.offerMode === 'PERCENT'}
+                                                    onChange={handleLendDetailsChange}
+                                                />
+                                                Apply Percentage Offer
+                                            </label>
+                                        )}
+
+                                        {activeOffer?.offerType === 'BUNDLE' && !activeSubscription && (
+                                            <label className="radio-group">
+                                                <input
+                                                    type="radio"
+                                                    name="offerMode"
+                                                    value="START_SUBSCRIPTION"
+                                                    checked={lendDetails.offerMode === 'START_SUBSCRIPTION'}
+                                                    onChange={handleLendDetailsChange}
+                                                />
+                                                Start Subscription
+                                            </label>
+                                        )}
+                                    </div>
+                                </>
+                            )}
+                            {!selectedLendCustomer && <p>Select a customer to check offers.</p>}
+                        </fieldset>
+
                          {/* Transaction Details Section */}
                          <fieldset>
-                            <legend>3. Transaction Details</legend>
+                            <legend>4. Transaction Details</legend>
                             <div className="form-group">
                                 <label htmlFor="pickupDate">Lend Date</label>
                                 <input type="date" id="pickupDate" name="pickupDate" value={lendDetails.pickupDate} onChange={handleLendDetailsChange} required />
@@ -700,12 +931,19 @@ const BookActionsPage = () => {
                             <div className="form-group">
                                 <label>Lending Amount per week: Rs. {selectedBook ? selectedBook.lendingCost : '0.00'}</label>
                             </div>
+                            <div className="offer-preview">
+                                <span>{lendPreview.label}</span>
+                                <strong>{currency.format(lendPreview.totalAmount)}</strong>
+                                {isSubscriptionMode && (
+                                    <small>Book revenue for P&amp;L: {currency.format(lendPreview.bookRevenueAmount)}</small>
+                                )}
+                            </div>
                             <div className="form-group form-group-inline">
-                                <input type="checkbox" id="isSwap" name="isSwap" checked={lendDetails.isSwap} onChange={handleLendDetailsChange} />
+                                <input type="checkbox" id="isSwap" name="isSwap" checked={lendDetails.isSwap} onChange={handleLendDetailsChange} disabled={isSubscriptionMode} />
                                 <label htmlFor="isSwap">Is this a book swap?</label>
                             </div>
                             <div className="form-group form-group-inline">
-                                <input type="checkbox" id="isPartiallyPaid" name="isPartiallyPaid" checked={lendDetails.isPartiallyPaid} onChange={handleLendDetailsChange} />
+                                <input type="checkbox" id="isPartiallyPaid" name="isPartiallyPaid" checked={lendDetails.isPartiallyPaid} onChange={handleLendDetailsChange} disabled={isSubscriptionMode} />
                                 <label htmlFor="isPartiallyPaid">Is this a partial payment?</label>
                             </div>
                             {lendDetails.isPartiallyPaid && (
@@ -776,10 +1014,21 @@ const BookActionsPage = () => {
 
                                             return (
                                                 <>
-                                                    <label>Duration:</label>
-                                                    <p>{summary.billedWeeks} week{summary.billedWeeks === 1 ? '' : 's'}</p>
-                                                    <label>Total Lending Amount:</label>
-                                                    <p>Rs. {summary.totalCost.toFixed(2)}</p>
+                                                    {summary.isSubscription ? (
+                                                        <>
+                                                            <label>Subscription:</label>
+                                                            <p>{selectedReturnTransaction.offerName || selectedReturnTransaction.subscriptionTxnId}</p>
+                                                            <label>Book Count:</label>
+                                                            <p>{selectedReturnTransaction.bundleBookNo} / {selectedReturnTransaction.bundleBookLimit}</p>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <label>Duration:</label>
+                                                            <p>{summary.billedWeeks} week{summary.billedWeeks === 1 ? '' : 's'}</p>
+                                                            <label>Total Lending Amount:</label>
+                                                            <p>Rs. {summary.totalCost.toFixed(2)}</p>
+                                                        </>
+                                                    )}
                                                     <label>Amount Paid:</label>
                                                     <p>Rs. {summary.amountPaid.toFixed(2)}</p>
                                                     <label>To Be Paid:</label>

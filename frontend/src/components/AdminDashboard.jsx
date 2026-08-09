@@ -88,6 +88,7 @@ const AdminDashboard = () => {
                 <div className="action-buttons">
                     <Link to="/admin/books" className="action-button">Manage Books</Link>
                     <Link to="/admin/customers" className="action-button">Manage Customers</Link>
+                    <Link to="/admin/offers" className="action-button">Manage Offers</Link>
                     <Link to="/admin/add-community" className="action-button">Manage Community</Link>
                     <Link to="/admin/reports" className="action-button">Reports</Link>
                 </div>

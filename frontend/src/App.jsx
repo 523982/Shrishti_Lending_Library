@@ -10,6 +10,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import LoginPage from './pages/LoginPage';
 import BookActionsPage from './pages/BookActions';
 import CustomerActionsPage from './pages/CustomerActions';
+import OfferActionsPage from './pages/OfferActions';
 import AddCustomerPage from './pages/AddCustomerPage';
 import AddCommunityPage from './pages/AddCommunityPage';
 import Reports from './pages/Reports';
@@ -35,6 +36,7 @@ function App() {
                         <Route element={<ProtectedRoute />}>
                         <Route path="/admin/books" element={<BookActionsPage />} />
               <Route path="/admin/customers" element={<CustomerActionsPage />} />
+              <Route path="/admin/offers" element={<OfferActionsPage />} />
               <Route path="/admin/add-customer" element={<AddCustomerPage />} />
               <Route path="/admin/add-community" element={<AddCommunityPage />} />
               <Route path="/admin/reports" element={<Reports />} />

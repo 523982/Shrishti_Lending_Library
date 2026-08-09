@@ -160,6 +160,10 @@ const Reports = () => {
             const totalAmount = toNumber(transaction.totalAmount);
             const amountPaid = toNumber(transaction.amountPaid);
             const pending = Math.max(0, totalAmount - amountPaid);
+            const isSubscription = Boolean(transaction.subscriptionTxnId);
+            const bookRevenueAmount = transaction.bookRevenueAmount == null
+                ? totalAmount
+                : toNumber(transaction.bookRevenueAmount);
             const book = booksById[transaction.bookId];
 
             if (!bookMap.has(transaction.bookId)) {
@@ -177,9 +181,9 @@ const Reports = () => {
 
             const bookRow = bookMap.get(transaction.bookId);
             bookRow.timesLent += 1;
-            bookRow.billed += totalAmount;
-            bookRow.collected += amountPaid;
-            bookRow.pending += pending;
+            bookRow.billed += bookRevenueAmount;
+            bookRow.collected += isSubscription ? bookRevenueAmount : amountPaid;
+            bookRow.pending += isSubscription ? 0 : pending;
 
             const customer = customerById[transaction.customerId];
             const community = customer?.community || communityById[customer?.communityId];
