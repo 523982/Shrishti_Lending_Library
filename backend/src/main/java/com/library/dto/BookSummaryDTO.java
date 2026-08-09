@@ -13,6 +13,7 @@ public class BookSummaryDTO {
     private String bookName;
     private String author;
     private String genre;
+    private String imageUrl;
     private Long statusId;
     private String statusDesc;
     private BigDecimal lendingCost;

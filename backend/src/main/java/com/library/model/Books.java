@@ -95,6 +95,14 @@ public class Books {
 		this.purchaseDate = purchaseDate;
 	}
 
+	public String getImageUrl() {
+		return imageUrl;
+	}
+
+	public void setImageUrl(String imageUrl) {
+		this.imageUrl = imageUrl;
+	}
+
 	@Id
     //@GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "book_id")
@@ -123,5 +131,8 @@ public class Books {
 
     @Column(name = "purchase_date")
     private LocalDate purchaseDate;
+
+    @Column(name = "image_url", columnDefinition = "text")
+    private String imageUrl;
 }
 

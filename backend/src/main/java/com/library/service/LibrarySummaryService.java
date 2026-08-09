@@ -129,6 +129,7 @@ public class LibrarySummaryService {
         dto.setBookName(book.getBookName());
         dto.setAuthor(book.getAuthor());
         dto.setGenre(book.getGenre());
+        dto.setImageUrl(book.getImageUrl());
         dto.setLendingCost(book.getLendingCost());
         dto.setPurchasePrice(book.getPurchasePrice());
         dto.setPurchaseDate(book.getPurchaseDate());

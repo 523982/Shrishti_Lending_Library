@@ -10,6 +10,7 @@ public class BooksDTO {
     private String genre;
     private BigDecimal lendingCost;
     private LocalDate purchaseDate;
+    private String imageUrl;
     private BookStatusDTO bookstatus; // Use the DTO here
 
 	public Long getBookId() {
@@ -49,6 +50,14 @@ public class BooksDTO {
 
 	public void setPurchaseDate(LocalDate purchaseDate) {
 		this.purchaseDate = purchaseDate;
+	}
+
+	public String getImageUrl() {
+		return imageUrl;
+	}
+
+	public void setImageUrl(String imageUrl) {
+		this.imageUrl = imageUrl;
 	}
 
 	public BookStatusDTO getBookstatus() {

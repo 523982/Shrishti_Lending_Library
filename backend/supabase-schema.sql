@@ -60,12 +60,16 @@ create table if not exists inventory (
     lending_cost numeric(10, 2) not null check (lending_cost >= 0),
     purchase_price numeric(10, 2),
     purchase_date date,
+    image_url text,
     selling_price numeric(10, 2),
     selling_date date
 );
 
 alter table inventory
 add column if not exists purchase_date date;
+
+alter table inventory
+add column if not exists image_url text;
 
 alter table inventory
 add column if not exists selling_price numeric(10, 2);

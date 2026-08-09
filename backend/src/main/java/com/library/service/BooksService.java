@@ -88,6 +88,7 @@ public class BooksService {
 	        existingBook.setPurchasePrice(bookDetails.getPurchasePrice());
 	        existingBook.setPurchaseDate(bookDetails.getPurchaseDate());
 	        existingBook.setLendingCost(bookDetails.getLendingCost());
+	        existingBook.setImageUrl(bookDetails.getImageUrl());
 	        if (bookDetails.getBookStatus()==null){
 	        existingBook.setBookStatus(bookStatus);
 	        }
@@ -135,6 +136,7 @@ public class BooksService {
 	        dto.setGenre(book.getGenre());
 	        dto.setLendingCost(book.getLendingCost());
 	        dto.setPurchaseDate(book.getPurchaseDate());
+	        dto.setImageUrl(book.getImageUrl());
 
 	        
 	        // Safely convert the nested BookStatus entity to its DTO
