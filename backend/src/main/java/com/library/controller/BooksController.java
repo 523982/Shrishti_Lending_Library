@@ -17,9 +17,11 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.library.dto.BookCountStatsDTO;
+import com.library.dto.BookSummaryDTO;
 import com.library.dto.BooksDTO;
 import com.library.model.Books;
 import com.library.service.BooksService;
+import com.library.service.LibrarySummaryService;
 
 import jakarta.validation.Valid;
 
@@ -28,10 +30,12 @@ import jakarta.validation.Valid;
 public class BooksController {
 
     private final BooksService booksService;
+    private final LibrarySummaryService librarySummaryService;
     
     @Autowired
-    public BooksController(BooksService booksService) {
+    public BooksController(BooksService booksService, LibrarySummaryService librarySummaryService) {
     	this.booksService=booksService;
+    	this.librarySummaryService=librarySummaryService;
     }
     
     // Get a single customer by ID
@@ -39,6 +43,11 @@ public class BooksController {
     public ResponseEntity<Books> getBooksById(@PathVariable(value = "id") Long bookId) {
         Books books = booksService.getBooksById(bookId);
         return ResponseEntity.ok().body(books);
+    }
+
+    @GetMapping("/{id}/summary")
+    public ResponseEntity<BookSummaryDTO> getBookSummary(@PathVariable(value = "id") Long bookId) {
+        return ResponseEntity.ok(librarySummaryService.getBookSummary(bookId));
     }
     
 

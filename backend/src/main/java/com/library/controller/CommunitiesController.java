@@ -14,8 +14,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.library.dto.CommunityDTO;
+import com.library.dto.CommunitySummaryDTO;
 import com.library.model.Communities;
 import com.library.service.CommunitiesService;
+import com.library.service.LibrarySummaryService;
 
 import jakarta.validation.Valid;
 
@@ -24,10 +26,12 @@ import jakarta.validation.Valid;
 public class CommunitiesController {
 	
 	 private final CommunitiesService communitiesService;
+	 private final LibrarySummaryService librarySummaryService;
 	 
 	    @Autowired
-	    public CommunitiesController(CommunitiesService communitiesService) {
+	    public CommunitiesController(CommunitiesService communitiesService, LibrarySummaryService librarySummaryService) {
 	    	this.communitiesService=communitiesService;
+	    	this.librarySummaryService=librarySummaryService;
 	    }
     
 	 // Get all communities
@@ -41,6 +45,11 @@ public class CommunitiesController {
     public ResponseEntity<Communities> getCommunitiesById(@PathVariable(value = "id") Long communityId) {
     	Communities communities = communitiesService.getCommunitiesById(communityId);
         return ResponseEntity.ok().body(communities);
+    }
+
+    @GetMapping("/{id}/summary")
+    public ResponseEntity<CommunitySummaryDTO> getCommunitySummary(@PathVariable(value = "id") Long communityId) {
+    	return ResponseEntity.ok(librarySummaryService.getCommunitySummary(communityId));
     }
     
     @GetMapping("/count")

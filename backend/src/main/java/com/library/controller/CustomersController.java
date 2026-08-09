@@ -14,8 +14,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.library.dto.CustomerRequestDTO;
+import com.library.dto.CustomerSummaryDTO;
 import com.library.model.Customers;
 import com.library.service.CustomerService;
+import com.library.service.LibrarySummaryService;
 
 import jakarta.validation.Valid;
 
@@ -24,9 +26,11 @@ import jakarta.validation.Valid;
 public class CustomersController {
 
     private final CustomerService customerService;
+    private final LibrarySummaryService librarySummaryService;
     
-    public CustomersController(CustomerService customerService) {
+    public CustomersController(CustomerService customerService, LibrarySummaryService librarySummaryService) {
     	this.customerService=customerService;
+    	this.librarySummaryService=librarySummaryService;
     }
 
     // Get all customers
@@ -45,6 +49,11 @@ public class CustomersController {
     public ResponseEntity<Customers> getCustomerById(@PathVariable(value = "id") String customerId) {
         Customers customer = customerService.getCustomerById(customerId);
         return ResponseEntity.ok().body(customer);
+    }
+
+    @GetMapping("/{id}/summary")
+    public ResponseEntity<CustomerSummaryDTO> getCustomerSummary(@PathVariable(value = "id") String customerId) {
+        return ResponseEntity.ok(librarySummaryService.getCustomerSummary(customerId));
     }
 
     // Create a new customer

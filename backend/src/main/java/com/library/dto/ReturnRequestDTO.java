@@ -1,10 +1,12 @@
 package com.library.dto;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 
 public class ReturnRequestDTO {
     private LocalDate returnDate;
     private boolean isSwap;
+    private BigDecimal amountPaid;
 
     public LocalDate getReturnDate() {
         return returnDate;
@@ -24,5 +26,13 @@ public class ReturnRequestDTO {
 
     public void setIsSwap(boolean isSwap) {
         this.isSwap = isSwap;
+    }
+
+    public BigDecimal getAmountPaid() {
+        return amountPaid;
+    }
+
+    public void setAmountPaid(BigDecimal amountPaid) {
+        this.amountPaid = amountPaid;
     }
 }

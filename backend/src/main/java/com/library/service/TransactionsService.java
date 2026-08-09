@@ -185,9 +185,18 @@ public class TransactionsService {
 			transactions.setDiscountAmount(discountAmount);
 			transactions.setTotalAmount(finalAmount);
 			transactions.setBookRevenueAmount(finalAmount);
-			if (!transactions.isPartiallyPaid()) {
-				transactions.setAmountPaid(finalAmount);
+			BigDecimal paidAmount = money(transactions.getAmountPaid());
+			if (returnRequest != null && returnRequest.getAmountPaid() != null) {
+				BigDecimal returnPayment = getCollectedAmount(returnRequest.getAmountPaid(), "Payment amount cannot be negative.");
+				paidAmount = money(paidAmount.add(returnPayment));
+				if (paidAmount.compareTo(finalAmount) > 0) {
+					paidAmount = finalAmount;
+				}
+			} else if (!transactions.isPartiallyPaid()) {
+				paidAmount = finalAmount;
 			}
+			transactions.setAmountPaid(paidAmount);
+			transactions.setPartiallyPaid(paidAmount.compareTo(finalAmount) < 0);
 		}
 
 		Books books = transactions.getBooks();
@@ -205,13 +214,13 @@ public class TransactionsService {
 
 	private void applyNormalLending(Transactions transaction, LendRequestDTO lendRequest, Books book) {
 		BigDecimal totalAmount = money(lendRequest.getTotalAmount() != null ? lendRequest.getTotalAmount() : book.getLendingCost());
-		BigDecimal amountPaid = lendRequest.isPartiallyPaid() ? money(lendRequest.getAmountPaid()) : totalAmount;
+		BigDecimal amountPaid = getCollectedAmount(lendRequest.getAmountPaid(), "Amount paid cannot be negative.");
 
 		transaction.setTotalAmount(totalAmount);
 		transaction.setNormalAmount(totalAmount);
 		transaction.setDiscountAmount(BigDecimal.ZERO);
 		transaction.setBookRevenueAmount(totalAmount);
-		transaction.setPartiallyPaid(lendRequest.isPartiallyPaid());
+		transaction.setPartiallyPaid(isPartiallyPaid(amountPaid, totalAmount));
 		transaction.setAmountPaid(amountPaid);
 	}
 
@@ -219,15 +228,27 @@ public class TransactionsService {
 		BigDecimal normalAmount = money(lendRequest.getTotalAmount() != null ? lendRequest.getTotalAmount() : book.getLendingCost());
 		BigDecimal discountAmount = calculatePercentDiscount(normalAmount, offer);
 		BigDecimal finalAmount = money(normalAmount.subtract(discountAmount));
-		BigDecimal amountPaid = lendRequest.isPartiallyPaid() ? money(lendRequest.getAmountPaid()) : finalAmount;
+		BigDecimal amountPaid = getCollectedAmount(lendRequest.getAmountPaid(), "Amount paid cannot be negative.");
 
 		transaction.setOffer(offer);
 		transaction.setTotalAmount(finalAmount);
 		transaction.setNormalAmount(normalAmount);
 		transaction.setDiscountAmount(discountAmount);
 		transaction.setBookRevenueAmount(finalAmount);
-		transaction.setPartiallyPaid(lendRequest.isPartiallyPaid());
+		transaction.setPartiallyPaid(isPartiallyPaid(amountPaid, finalAmount));
 		transaction.setAmountPaid(amountPaid);
+	}
+
+	private BigDecimal getCollectedAmount(BigDecimal amount, String negativeMessage) {
+		BigDecimal amountPaid = money(amount);
+		if (amountPaid.compareTo(BigDecimal.ZERO) < 0) {
+			throw new IllegalArgumentException(negativeMessage);
+		}
+		return amountPaid;
+	}
+
+	private boolean isPartiallyPaid(BigDecimal amountPaid, BigDecimal totalAmount) {
+		return amountPaid.compareTo(BigDecimal.ZERO) > 0 && amountPaid.compareTo(totalAmount) < 0;
 	}
 
 	private void startSubscription(Transactions transaction, Offers offer, Books book, LocalDate pickupDate) {

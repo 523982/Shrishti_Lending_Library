@@ -22,5 +22,7 @@ public interface CustomersRepository extends JpaRepository<Customers, String>, J
 	Integer findMaxCustomerId();
 	
 	List<Customers> findByCustomerNameContainingIgnoreCase(String query);
+
+	long countByCommunityCommunityId(Long communityId);
 }
 

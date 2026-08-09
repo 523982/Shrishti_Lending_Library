@@ -35,5 +35,11 @@ import org.springframework.stereotype.Repository;
 		List<Transactions> findPotentialActiveSubscriptionRows(@Param("customerId") String customerId, @Param("subscriptionStatus") String subscriptionStatus);
 
 		List<Transactions> findBySubscriptionTxnIdOrderByBundleBookNoAsc(String subscriptionTxnId);
+
+		List<Transactions> findByCustomersCustomerIdOrderByPickupDateDescTransactionIdDesc(String customerId);
+
+		List<Transactions> findByBooksBookIdOrderByPickupDateDescTransactionIdDesc(Long bookId);
+
+		List<Transactions> findByCustomersCommunityCommunityIdOrderByPickupDateDescTransactionIdDesc(Long communityId);
 	}
 
