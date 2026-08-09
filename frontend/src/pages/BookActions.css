@@ -2,9 +2,12 @@
     display: flex;
     border-bottom: 2px solid #dee2e6;
     margin-bottom: 2rem;
+    overflow-x: auto;
+    scrollbar-width: thin;
 }
 
 .action-tabs button {
+    flex: 0 0 auto;
     padding: 10px 20px;
     border: none;
     background-color: transparent;
@@ -245,6 +248,45 @@
     font-size: 1.2rem;
     font-weight: bold;
     color: #28a745;
+}
+
+@media (max-width: 760px) {
+    .action-tabs {
+        gap: 0.25rem;
+        margin: -0.25rem -1rem 1.25rem;
+        padding: 0 1rem;
+        border-bottom: 1px solid #dee2e6;
+    }
+
+    .action-tabs button {
+        min-height: 44px;
+        padding: 9px 12px;
+        font-size: 0.95rem;
+        white-space: nowrap;
+    }
+
+    .search-container {
+        margin-bottom: 1.25rem;
+    }
+
+    .search-results {
+        max-height: 260px;
+    }
+
+    .book-details-display {
+        margin-top: 1rem;
+        padding: 1rem;
+    }
+
+    .radio-group {
+        align-items: flex-start;
+    }
+
+    .details-group {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
 }
 
 @keyframes spin {

@@ -3,9 +3,8 @@ import { Link } from 'react-router-dom';
 import './BookCard.css'; 
 
 const BookCard = ({ book }) => {
-    // A default image can be used if a book cover is missing
-    //const coverImage = book.coverImageUrl || 'https://via.placeholder.com/200x250.png?text=No+Cover';
-   
+    const coverImage = book.imageUrl || book.coverImageUrl;
+    const fallbackInitial = String(book.bookName || 'B').trim().charAt(0).toUpperCase() || 'B';
     const statusName = book.bookstatus?.statusName || book.bookstatus?.statusDesc || book.bookstatus || 'N/A';
     const isAvailable = statusName.toLowerCase() === 'available';
     const statusText = isAvailable ? 'Available' : 'Unavailable';
@@ -13,7 +12,13 @@ const BookCard = ({ book }) => {
     return (
         <Link to={`/books/${book.bookId}`} className="book-card-link">
             <div className="book-card">
-           {/* <img src={coverImage} alt={` ${book.bookName}`} className="book-card-cover" />*/}
+            {coverImage ? (
+                <img src={coverImage} alt={`${book.bookName} cover`} className="book-card-cover" />
+            ) : (
+                <div className="book-card-cover book-card-cover-placeholder" aria-hidden="true">
+                    <span>{fallbackInitial}</span>
+                </div>
+            )}
             <div className="book-card-info">
                 <h3 className="book-card-title">{book.bookName}</h3>
                 <p className="book-card-author">by {book.author}</p>

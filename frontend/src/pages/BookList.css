@@ -86,18 +86,30 @@
 }
 
 @media (max-width: 760px) {
+    .book-list-container {
+        padding: 1rem 0.75rem;
+    }
+
     .collection-header {
         align-items: stretch;
         flex-direction: column;
+        gap: 1rem;
     }
 
     .book-filters {
         align-items: stretch;
+        display: grid;
+        grid-template-columns: 1fr;
     }
 
     .book-filters label,
     .book-filters select,
     .book-filters button {
         width: 100%;
+    }
+
+    .book-list {
+        grid-template-columns: 1fr;
+        gap: 0.85rem;
     }
 }

@@ -40,7 +40,8 @@ const BookDetailsPage = () => {
     if (error) return <div style={{ color: 'red' }}>{error}</div>;
     if (!book) return <div>Book not found.</div>;
 
-    const coverImage = book.coverImageUrl || 'https://via.placeholder.com/300x400.png?text=No+Cover';
+    const coverImage = book.imageUrl || book.coverImageUrl;
+    const fallbackInitial = String(book.bookName || 'B').trim().charAt(0).toUpperCase() || 'B';
     const statusDesc = String(
         book.bookstatus?.statusDesc ||
         book.bookstatus?.statusName ||
@@ -76,7 +77,13 @@ const BookDetailsPage = () => {
         <div className="book-details-container">
             <Link to="/browse" className="back-link">&larr; Back to Browse</Link>
             <div className="book-details-content">
-                <img src={coverImage} alt={`${book.bookName}`} className="book-details-cover" />
+                {coverImage ? (
+                    <img src={coverImage} alt={`${book.bookName} cover`} className="book-details-cover" />
+                ) : (
+                    <div className="book-details-cover book-details-cover-placeholder" aria-hidden="true">
+                        <span>{fallbackInitial}</span>
+                    </div>
+                )}
                 <div className="book-details-info">
                     <h1>{book.bookName}</h1>
                     <h3>by {book.author}</h3>

@@ -66,7 +66,7 @@ const TransactionTable = ({ rows = [], context, emptyMessage = 'No transactions 
             <tbody>
                 {rows.map(row => (
                     <tr key={row.transactionId}>
-                        <td>
+                        <td data-label="Book">
                             {row.bookId ? (
                                 <Link to="/admin/books" state={{ adminBookAction: 'view', bookId: row.bookId }}>
                                     {row.bookName || row.bookId}
@@ -75,7 +75,7 @@ const TransactionTable = ({ rows = [], context, emptyMessage = 'No transactions 
                             {row.author && <span className="summary-subtext">by {row.author}</span>}
                         </td>
                         {context !== 'customer' && (
-                            <td>
+                            <td data-label="Customer">
                                 {row.customerId ? (
                                     <Link to="/admin/customers" state={{ customerAction: 'view', customerId: row.customerId }}>
                                         {row.customerName || row.customerId}
@@ -84,14 +84,14 @@ const TransactionTable = ({ rows = [], context, emptyMessage = 'No transactions 
                                 {row.mobileNumber && <span className="summary-subtext">{row.mobileNumber}</span>}
                             </td>
                         )}
-                        <td>{formatDate(row.pickupDate)}</td>
-                        <td>{formatDate(row.returnDate)}</td>
-                        <td>
+                        <td data-label="Pickup">{formatDate(row.pickupDate)}</td>
+                        <td data-label="Return">{formatDate(row.returnDate)}</td>
+                        <td data-label="Amount">
                             <strong>{formatCurrency(row.totalAmount)}</strong>
                             <span className="summary-subtext">Paid {formatCurrency(row.amountPaid)}</span>
                         </td>
-                        <td>{getOfferLabel(row)}</td>
-                        <td>{row.active ? 'Active' : 'Returned'}</td>
+                        <td data-label="Offer / Sub">{getOfferLabel(row)}</td>
+                        <td data-label="Status">{row.active ? 'Active' : 'Returned'}</td>
                     </tr>
                 ))}
                 {rows.length === 0 && (
@@ -160,13 +160,21 @@ export const CustomerSummaryView = ({ summary }) => {
 
 export const BookSummaryView = ({ summary }) => {
     if (!summary) return null;
+    const fallbackInitial = String(summary.bookName || 'B').trim().charAt(0).toUpperCase() || 'B';
 
     return (
         <div className="summary-view">
-            <div className="summary-heading">
-                <div>
-                    <h2>{summary.bookName}</h2>
-                    <p>{summary.author ? `by ${summary.author}` : 'Unknown author'}{summary.genre ? ` | ${summary.genre}` : ''}</p>
+            <div className="summary-heading book-summary-heading">
+                <div className="summary-book-title">
+                    {summary.imageUrl ? (
+                        <img src={summary.imageUrl} alt={`${summary.bookName} cover`} />
+                    ) : (
+                        <span className="summary-book-placeholder" aria-hidden="true">{fallbackInitial}</span>
+                    )}
+                    <div>
+                        <h2>{summary.bookName}</h2>
+                        <p>{summary.author ? `by ${summary.author}` : 'Unknown author'}{summary.genre ? ` | ${summary.genre}` : ''}</p>
+                    </div>
                 </div>
                 <span className={`summary-status ${String(summary.statusDesc).toLowerCase() === 'available' ? 'available' : 'unavailable'}`}>
                     {summary.statusDesc || 'Unknown'}

@@ -91,6 +91,18 @@ const currency = new Intl.NumberFormat('en-IN', {
     maximumFractionDigits: 0,
 });
 
+const MAX_BOOK_IMAGE_BYTES = 750 * 1024;
+const ACCEPTED_BOOK_IMAGE_TYPES = ['image/png', 'image/jpeg'];
+
+const readBookImageFile = (file) => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error('Could not read the selected image.'));
+    reader.readAsDataURL(file);
+});
+
+const getBookImageUrl = (book) => book?.imageUrl || book?.coverImageUrl || '';
+
 const getCustomerCommunityId = (customer) => (
     customer?.community?.communityId ||
     customer?.communityId ||
@@ -170,7 +182,7 @@ const BookActionsPage = () => {
         purchasePrice: '',
         purchaseDate: getTodayInputValue(),
         lendingCost: '',
-        coverImageUrl: '',
+        imageUrl: '',
     });
 
         // State for the "Modify Book" functionality
@@ -234,6 +246,58 @@ const BookActionsPage = () => {
         setBookData(prevData => ({
             ...prevData,
             [name]: value,
+        }));
+    };
+
+    const handleBookImageChange = async (e, target) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        if (!ACCEPTED_BOOK_IMAGE_TYPES.includes(file.type)) {
+            setError('Please upload only PNG or JPG book photos.');
+            e.target.value = '';
+            return;
+        }
+
+        if (file.size > MAX_BOOK_IMAGE_BYTES) {
+            setError('Book photo is too large. Please upload an image under 750 KB.');
+            e.target.value = '';
+            return;
+        }
+
+        try {
+            const imageUrl = await readBookImageFile(file);
+            setError(null);
+            if (target === 'modify') {
+                setSelectedBook(prevBook => ({
+                    ...prevBook,
+                    imageUrl,
+                }));
+            } else {
+                setBookData(prevData => ({
+                    ...prevData,
+                    imageUrl,
+                }));
+            }
+        } catch (err) {
+            setError(err.message || 'Failed to load the selected book photo.');
+        } finally {
+            e.target.value = '';
+        }
+    };
+
+    const handleRemoveBookImage = (target) => {
+        if (target === 'modify') {
+            setSelectedBook(prevBook => ({
+                ...prevBook,
+                imageUrl: '',
+            }));
+            return;
+        }
+
+        setBookData(prevData => ({
+            ...prevData,
+            imageUrl: '',
         }));
     };
 
@@ -546,7 +610,7 @@ const BookActionsPage = () => {
                 purchasePrice: '',
                 purchaseDate: getTodayInputValue(),
                 lendingCost: '',
-                coverImageUrl: '',
+                imageUrl: '',
             });
 
             if (returnToLendAfterAdd) {
@@ -786,6 +850,16 @@ const BookActionsPage = () => {
                             <label htmlFor="purchaseDate">Purchase Date</label>
                             <input type="date" id="purchaseDate" name="purchaseDate" value={bookData.purchaseDate} onChange={handleChange} required />
                         </div>
+                        <div className="form-group">
+                            <label htmlFor="bookPhoto">Book Photo (PNG/JPG, Optional)</label>
+                            <input type="file" id="bookPhoto" accept="image/png,image/jpeg" onChange={(e) => handleBookImageChange(e, 'add')} />
+                            {getBookImageUrl(bookData) && (
+                                <div className="book-image-preview">
+                                    <img src={getBookImageUrl(bookData)} alt={`${bookData.bookName || 'Book'} cover preview`} />
+                                    <button type="button" onClick={() => handleRemoveBookImage('add')}>Remove Photo</button>
+                                </div>
+                            )}
+                        </div>
                         <button type="submit" className="submit-button">Add Book</button>
                     </form>
                 </>
@@ -845,6 +919,16 @@ const BookActionsPage = () => {
                             <div className="form-group">
                                 <label htmlFor="purchasePrice">Purchase Cost (Rs.)</label>
                                 <input type="number" id="purchasePrice" name="purchasePrice" value={selectedBook.purchasePrice} onChange={handleModifyChange} required />
+                            </div>
+                            <div className="form-group">
+                                <label htmlFor="modifyBookPhoto">Book Photo (PNG/JPG, Optional)</label>
+                                <input type="file" id="modifyBookPhoto" accept="image/png,image/jpeg" onChange={(e) => handleBookImageChange(e, 'modify')} />
+                                {getBookImageUrl(selectedBook) && (
+                                    <div className="book-image-preview">
+                                        <img src={getBookImageUrl(selectedBook)} alt={`${selectedBook.bookName || 'Book'} cover preview`} />
+                                        <button type="button" onClick={() => handleRemoveBookImage('modify')}>Remove Photo</button>
+                                    </div>
+                                )}
                             </div>
                             <button type="submit" className="submit-button">Update Book</button>
                         </form>

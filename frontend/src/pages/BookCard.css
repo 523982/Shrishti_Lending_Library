@@ -17,8 +17,31 @@
 
 .book-card-cover {
     width: 100%;
-    height: 250px;
+    aspect-ratio: 3 / 4;
+    height: auto;
     object-fit: cover;
+    background: #eef2f7;
+    display: block;
+}
+
+.book-card-cover-placeholder {
+    display: grid;
+    place-items: center;
+    color: #1f2937;
+    background: linear-gradient(135deg, #eaf4ff 0%, #f7fbf2 100%);
+}
+
+.book-card-cover-placeholder span {
+    width: 56px;
+    height: 56px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: #ffffff;
+    color: #0056b3;
+    font-size: 1.7rem;
+    font-weight: 800;
+    box-shadow: 0 6px 16px rgba(15, 23, 42, 0.12);
 }
 
 .book-card-info {
@@ -90,5 +113,40 @@
     border-radius: 12px;
     font-size: 0.8rem;
     font-weight: 500;
+}
+
+@media (max-width: 560px) {
+    .book-card {
+        display: grid;
+        grid-template-columns: 96px minmax(0, 1fr);
+        min-height: 142px;
+    }
+
+    .book-card-cover {
+        width: 96px;
+        height: 100%;
+        min-height: 142px;
+        aspect-ratio: auto;
+    }
+
+    .book-card-info {
+        padding: 0.85rem;
+        min-width: 0;
+    }
+
+    .book-card-title {
+        font-size: 1rem;
+    }
+
+    .book-card-author,
+    .book-card-lcost {
+        font-size: 0.82rem;
+    }
+
+    .status-badge {
+        display: inline-flex;
+        padding: 4px 9px;
+        font-size: 0.78rem;
+    }
 }
 

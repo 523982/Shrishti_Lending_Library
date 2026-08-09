@@ -21,6 +21,32 @@
     font-weight: 600;
 }
 
+.summary-book-title {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    min-width: 0;
+}
+
+.summary-book-title img,
+.summary-book-placeholder {
+    width: 64px;
+    aspect-ratio: 3 / 4;
+    flex: 0 0 auto;
+    border-radius: 6px;
+    object-fit: cover;
+    background: #eef2f7;
+}
+
+.summary-book-placeholder {
+    display: grid;
+    place-items: center;
+    color: #0056b3;
+    font-size: 1.6rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, #eaf4ff 0%, #f7fbf2 100%);
+}
+
 .summary-metrics {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -130,5 +156,77 @@
 @media (max-width: 680px) {
     .summary-heading {
         flex-direction: column;
+    }
+
+    .summary-book-title {
+        align-items: flex-start;
+    }
+
+    .summary-metrics {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .summary-panel {
+        padding: 0.8rem;
+    }
+
+    .summary-table-wrap {
+        overflow: visible;
+    }
+
+    .summary-table,
+    .summary-table tbody,
+    .summary-table tr,
+    .summary-table td {
+        display: block;
+        width: 100%;
+        min-width: 0;
+    }
+
+    .summary-table thead {
+        display: none;
+    }
+
+    .summary-table tr {
+        border: 1px solid #e6ebf0;
+        border-radius: 8px;
+        margin-bottom: 0.75rem;
+        padding: 0.35rem 0;
+        background: #ffffff;
+    }
+
+    .summary-table td {
+        display: grid;
+        grid-template-columns: 104px minmax(0, 1fr);
+        gap: 0.75rem;
+        border-bottom: 0;
+        padding: 0.5rem 0.7rem;
+    }
+
+    .summary-table td::before {
+        content: attr(data-label);
+        color: #66717f;
+        font-size: 0.8rem;
+        font-weight: 800;
+        text-transform: uppercase;
+    }
+
+    .summary-table td[colspan] {
+        display: block;
+    }
+
+    .summary-table td[colspan]::before {
+        content: none;
+    }
+}
+
+@media (max-width: 420px) {
+    .summary-metrics {
+        grid-template-columns: 1fr;
+    }
+
+    .summary-table td {
+        grid-template-columns: 88px minmax(0, 1fr);
+        gap: 0.5rem;
     }
 }

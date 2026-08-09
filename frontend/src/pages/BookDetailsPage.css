@@ -23,10 +23,20 @@
 
 .book-details-cover {
     width: 300px;
+    aspect-ratio: 3 / 4;
     height: auto;
     object-fit: cover;
     border-radius: 8px;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+.book-details-cover-placeholder {
+    display: grid;
+    place-items: center;
+    background: linear-gradient(135deg, #eaf4ff 0%, #f7fbf2 100%);
+    color: #0056b3;
+    font-size: 4rem;
+    font-weight: 800;
 }
 
 .book-details-info {
@@ -100,3 +110,32 @@
     cursor: not-allowed;
 }
 
+@media (max-width: 760px) {
+    .book-details-container {
+        padding: 1rem;
+    }
+
+    .book-details-content {
+        flex-direction: column;
+        gap: 1.25rem;
+    }
+
+    .book-details-cover {
+        width: min(100%, 280px);
+        align-self: center;
+    }
+
+    .book-details-info h1 {
+        font-size: 1.75rem;
+        line-height: 1.2;
+    }
+
+    .book-details-info h3 {
+        font-size: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .book-details-status {
+        margin: 0.75rem 0 1rem;
+    }
+}

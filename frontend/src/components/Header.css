@@ -23,6 +23,7 @@
     align-items: center;
     gap: 25px;
     flex-wrap: wrap;
+    min-width: 0;
 }
 
 .app-header nav a {
@@ -128,6 +129,10 @@
     .app-header nav {
         gap: 0.75rem;
         min-width: 0;
+        overflow-x: auto;
+        flex-wrap: nowrap;
+        padding-bottom: 0.15rem;
+        scrollbar-width: thin;
     }
 
     .app-header nav a {
@@ -156,15 +161,19 @@
 
     .app-header nav {
         width: 100%;
+        order: 2;
     }
 
     .app-header nav a {
         line-height: 1.2;
+        flex: 0 0 auto;
+        padding: 0.25rem 0;
     }
 
     .auth-section {
         justify-content: flex-start;
         margin-left: 0;
+        order: 1;
     }
 }
 
