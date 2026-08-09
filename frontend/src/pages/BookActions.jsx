@@ -107,6 +107,15 @@ const getOfferPreview = (selectedBook, lendDetails, activeOffer, activeSubscript
         };
     }
 
+    if (activeSubscription && !activeSubscription.canUseSubscription) {
+        return {
+            label: 'Subscription cannot take another book',
+            totalAmount: 0,
+            amountPaid: 0,
+            bookRevenueAmount: Number(activeSubscription.bookRevenueAmount) || 0,
+        };
+    }
+
     if (lendDetails.offerMode === 'PERCENT' && activeOffer?.offerType === 'PERCENT') {
         const discount = lendingCost * ((Number(activeOffer.discountPercent) || 0) / 100);
         const finalAmount = Math.max(0, lendingCost - discount);
@@ -560,9 +569,22 @@ const BookActionsPage = () => {
         setError(null);
         setSuccess(null);
 
+        if (activeSubscription && !activeSubscription.canUseSubscription) {
+            setError("This customer has an active subscription that cannot take another book yet. Close it by returning all used books, or wait until it expires.");
+            return;
+        }
+
+        const selectedOfferMode = activeSubscription?.canUseSubscription
+            ? 'USE_SUBSCRIPTION'
+            : lendDetails.offerMode;
+        const effectiveLendDetails = {
+            ...lendDetails,
+            offerMode: selectedOfferMode,
+        };
+
         try {
-            const isSubscriptionMode = ['START_SUBSCRIPTION', 'USE_SUBSCRIPTION'].includes(lendDetails.offerMode);
-            const preview = getOfferPreview(selectedBook, lendDetails, activeOffer, activeSubscription);
+            const isSubscriptionMode = ['START_SUBSCRIPTION', 'USE_SUBSCRIPTION'].includes(selectedOfferMode);
+            const preview = getOfferPreview(selectedBook, effectiveLendDetails, activeOffer, activeSubscription);
                         // Construct the full payload expected by the backend
                         const payload = {
                 bookId: selectedBook.bookId,
@@ -574,11 +596,11 @@ const BookActionsPage = () => {
                 amountPaid: isSubscriptionMode ? preview.amountPaid : parseFloat(lendDetails.amountPaid) || 0,
             };
 
-            if (lendDetails.offerMode === 'PERCENT' || lendDetails.offerMode === 'START_SUBSCRIPTION') {
+            if (selectedOfferMode === 'PERCENT' || selectedOfferMode === 'START_SUBSCRIPTION') {
                 payload.offerId = activeOffer?.offerId;
             }
 
-            if (lendDetails.offerMode === 'USE_SUBSCRIPTION') {
+            if (selectedOfferMode === 'USE_SUBSCRIPTION') {
                 payload.subscriptionTxnId = activeSubscription?.subscriptionTxnId;
             }
 
@@ -628,8 +650,16 @@ const BookActionsPage = () => {
         }
     };
 
-    const lendPreview = getOfferPreview(selectedBook, lendDetails, activeOffer, activeSubscription);
-    const isSubscriptionMode = ['START_SUBSCRIPTION', 'USE_SUBSCRIPTION'].includes(lendDetails.offerMode);
+    const selectedOfferMode = activeSubscription?.canUseSubscription
+        ? 'USE_SUBSCRIPTION'
+        : lendDetails.offerMode;
+    const effectiveLendDetails = {
+        ...lendDetails,
+        offerMode: selectedOfferMode,
+    };
+    const lendPreview = getOfferPreview(selectedBook, effectiveLendDetails, activeOffer, activeSubscription);
+    const isSubscriptionMode = ['START_SUBSCRIPTION', 'USE_SUBSCRIPTION'].includes(selectedOfferMode);
+    const isLendBlockedBySubscription = Boolean(activeSubscription && !activeSubscription.canUseSubscription);
 
     return (
         <div className="admin-form-container">
@@ -848,7 +878,7 @@ const BookActionsPage = () => {
                                                 {' | '}Valid till: {activeSubscription.subscriptionEndDate || '-'}
                                             </p>
                                             {!activeSubscription.canUseSubscription && (
-                                                <p className="offer-warning">This subscription cannot be used for another book.</p>
+                                                <p className="offer-warning">This subscription cannot take another book. Return all used books to close it before starting a new lend.</p>
                                             )}
                                         </div>
                                     )}
@@ -866,16 +896,18 @@ const BookActionsPage = () => {
                                     )}
 
                                     <div className="offer-mode-list">
-                                        <label className="radio-group">
-                                            <input
-                                                type="radio"
-                                                name="offerMode"
-                                                value="NORMAL"
-                                                checked={lendDetails.offerMode === 'NORMAL'}
-                                                onChange={handleLendDetailsChange}
-                                            />
-                                            Normal Lending
-                                        </label>
+                                        {!activeSubscription && (
+                                            <label className="radio-group">
+                                                <input
+                                                    type="radio"
+                                                    name="offerMode"
+                                                    value="NORMAL"
+                                                    checked={lendDetails.offerMode === 'NORMAL'}
+                                                    onChange={handleLendDetailsChange}
+                                                />
+                                                Normal Lending
+                                            </label>
+                                        )}
 
                                         {activeSubscription?.canUseSubscription && (
                                             <label className="radio-group">
@@ -883,7 +915,7 @@ const BookActionsPage = () => {
                                                     type="radio"
                                                     name="offerMode"
                                                     value="USE_SUBSCRIPTION"
-                                                    checked={lendDetails.offerMode === 'USE_SUBSCRIPTION'}
+                                                    checked={selectedOfferMode === 'USE_SUBSCRIPTION'}
                                                     onChange={handleLendDetailsChange}
                                                 />
                                                 Use Active Subscription
@@ -957,7 +989,7 @@ const BookActionsPage = () => {
                         <button
                             type="submit"
                             className="submit-button"
-                            disabled={!selectedBook || !selectedLendCustomer}
+                            disabled={!selectedBook || !selectedLendCustomer || loadingOfferContext || isLendBlockedBySubscription}
                         >
                             Lend Book
                         </button>
