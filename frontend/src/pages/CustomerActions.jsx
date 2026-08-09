@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import apiClient from '../services/api';
+import { CustomerSummaryView } from '../components/SummaryViews';
 import './AdminForms.css';
 import './BookActions.css';
 
@@ -44,11 +45,37 @@ const CustomerActionsPage = () => {
     const [loadingSearch, setLoadingSearch] = useState(false);
     const [communities, setCommunities] = useState([]);
     const [loadingCommunities, setLoadingCommunities] = useState(true);
+    const [customerSummary, setCustomerSummary] = useState(null);
+    const [loadingSummary, setLoadingSummary] = useState(false);
     const [error, setError] = useState(null);
     const [success, setSuccess] = useState(null);
     const location = useLocation();
 
+    const loadCustomerSummary = async (customerId) => {
+        if (!customerId) return;
+        try {
+            setLoadingSummary(true);
+            setError(null);
+            const response = await apiClient.get(`/customers/${customerId}/summary`);
+            setCustomerSummary(response.data);
+            setSelectedCustomerId(response.data.customerId);
+            setSelectedCustomer(response.data);
+            setSearchQuery(response.data.customerName || '');
+        } catch (err) {
+            console.error('Error loading customer summary:', err);
+            setCustomerSummary(null);
+            setError(getApiErrorMessage(err, 'Failed to load customer summary.'));
+        } finally {
+            setLoadingSummary(false);
+        }
+    };
+
     useEffect(() => {
+        if (location.state?.customerAction === 'view' && location.state?.customerId) {
+            setCurrentAction('view');
+            loadCustomerSummary(location.state.customerId);
+            return;
+        }
         if (location.state?.customerData) {
             setCustomerData(location.state.customerData);
             setCurrentAction('add');
@@ -77,7 +104,12 @@ const CustomerActionsPage = () => {
     }, []);
 
     useEffect(() => {
-        if (!['modify', 'delete'].includes(currentAction) || searchQuery.trim() === '') {
+        if (!['modify', 'delete', 'view'].includes(currentAction) || searchQuery.trim() === '') {
+            setSearchResults([]);
+            return;
+        }
+
+        if (selectedCustomer && searchQuery === selectedCustomer.customerName) {
             setSearchResults([]);
             return;
         }
@@ -97,7 +129,7 @@ const CustomerActionsPage = () => {
         }, 300);
 
         return () => clearTimeout(debounceTimer);
-    }, [currentAction, searchQuery]);
+    }, [currentAction, searchQuery, selectedCustomer]);
 
     const clearMessages = () => {
         setError(null);
@@ -110,6 +142,7 @@ const CustomerActionsPage = () => {
         setSelectedCustomerId(null);
         setSearchQuery('');
         setSearchResults([]);
+        setCustomerSummary(null);
         clearMessages();
         if (action === 'add') {
             setCustomerData(emptyCustomer);
@@ -128,6 +161,9 @@ const CustomerActionsPage = () => {
         setSearchQuery(customer.customerName);
         setSearchResults([]);
         clearMessages();
+        if (currentAction === 'view') {
+            loadCustomerSummary(customer.customerId);
+        }
     };
 
     const buildPayload = () => {
@@ -286,11 +322,12 @@ const CustomerActionsPage = () => {
     );
 
     return (
-        <div className="admin-form-container">
+        <div className={`admin-form-container ${currentAction === 'view' ? 'summary-container' : ''}`}>
             <div className="action-tabs">
                 <button type="button" onClick={() => handleActionChange('add')} className={currentAction === 'add' ? 'active' : ''}>Add Customer</button>
                 <button type="button" onClick={() => handleActionChange('modify')} className={currentAction === 'modify' ? 'active' : ''}>Modify Customer</button>
                 <button type="button" onClick={() => handleActionChange('delete')} className={currentAction === 'delete' ? 'active' : ''}>Delete Customer</button>
+                <button type="button" onClick={() => handleActionChange('view')} className={currentAction === 'view' ? 'active' : ''}>View Customer</button>
             </div>
             <Link to="/" className="back-link">&larr; Back to Dashboard</Link>
 
@@ -323,6 +360,15 @@ const CustomerActionsPage = () => {
                             <button type="button" onClick={handleDelete} className="submit-button delete-button">Delete This Customer</button>
                         </div>
                     )}
+                </>
+            )}
+
+            {currentAction === 'view' && (
+                <>
+                    <h1>View Customer</h1>
+                    {renderCustomerSearch('Search for a Customer to View')}
+                    {loadingSummary && <p>Loading customer summary...</p>}
+                    {!loadingSummary && customerSummary && <CustomerSummaryView summary={customerSummary} />}
                 </>
             )}
 

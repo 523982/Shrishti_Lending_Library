@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import apiClient from '../services/api';
+import { BookSummaryView } from '../components/SummaryViews';
 import './AdminForms.css';
 import './BookActions.css'; // We'll create this for new styles
 
@@ -154,6 +155,8 @@ const BookActionsPage = () => {
         const [searchQuery, setSearchQuery] = useState('');
         const [searchResults, setSearchResults] = useState([]);
         const [selectedBook, setSelectedBook] = useState(null);
+        const [bookSummary, setBookSummary] = useState(null);
+        const [loadingBookSummary, setLoadingBookSummary] = useState(false);
         const [loadingSearch, setLoadingSearch] = useState(false);
         const [searchError, setSearchError] = useState(null);
         const [returnToLendAfterAdd, setReturnToLendAfterAdd] = useState(false);
@@ -239,10 +242,35 @@ const BookActionsPage = () => {
             setReturnToLendAfterAdd(true);
             setCurrentAction('add');
         };
+
+        const loadBookSummary = async (bookId) => {
+            if (!bookId) return;
+            try {
+                setLoadingBookSummary(true);
+                setError(null);
+                const response = await apiClient.get(`/books/${bookId}/summary`);
+                setBookSummary(response.data);
+                setSelectedBook(response.data);
+                setSearchQuery(response.data.bookName || '');
+                setSearchResults([]);
+            } catch (err) {
+                console.error('Error loading book summary:', err);
+                setBookSummary(null);
+                setError(err.response?.data?.message || 'Failed to load book summary.');
+            } finally {
+                setLoadingBookSummary(false);
+            }
+        };
     
-        // Debounced search effect for Modify/Delete tabs
+        // Debounced search effect for Modify/Delete/Lend/View tabs
         useEffect(() => {
-            if (searchQuery.trim() === '') {
+            if (!['modify', 'delete', 'lend', 'view'].includes(currentAction) || searchQuery.trim() === '') {
+                setSearchResults([]);
+                setSearchError(null);
+                return;
+            }
+
+            if (selectedBook && searchQuery === selectedBook.bookName) {
                 setSearchResults([]);
                 setSearchError(null);
                 return;
@@ -265,7 +293,7 @@ const BookActionsPage = () => {
             }, 300); // 300ms delay before searching
     
             return () => clearTimeout(debounceTimer);
-        }, [searchQuery]);
+        }, [searchQuery, currentAction, selectedBook]);
       // Effect to fetch communities for the Lend tab filter
       useEffect(() => {
         if (currentAction === 'lend') {
@@ -417,6 +445,9 @@ const BookActionsPage = () => {
             setSelectedBook(book);
             setSearchQuery(book.bookName);
             setSearchResults([]);
+            if (currentAction === 'view') {
+                loadBookSummary(book.bookId);
+            }
                         // When a book is selected for lending, set its cost as the total amount
             // and reset the payment details.
             if (currentAction === 'lend') {
@@ -429,6 +460,7 @@ const BookActionsPage = () => {
 
         const handleClearSelection = () => {
             setSelectedBook(null);
+            setBookSummary(null);
             setSearchQuery('');
             setSearchResults([]);
         };
@@ -453,6 +485,15 @@ const BookActionsPage = () => {
             if (location.state?.adminBookAction === 'return' && location.state?.book) {
                 setCurrentAction('return');
                 handleSelectReturnBook(location.state.book);
+                navigate(location.pathname, { replace: true, state: {} });
+            }
+
+            if (location.state?.adminBookAction === 'view') {
+                const bookId = location.state.bookId || location.state.book?.bookId;
+                setCurrentAction('view');
+                if (bookId) {
+                    loadBookSummary(bookId);
+                }
                 navigate(location.pathname, { replace: true, state: {} });
             }
         }, [location.state]);
@@ -662,7 +703,7 @@ const BookActionsPage = () => {
     const isLendBlockedBySubscription = Boolean(activeSubscription && !activeSubscription.canUseSubscription);
 
     return (
-        <div className="admin-form-container">
+        <div className={`admin-form-container ${currentAction === 'view' ? 'summary-container' : ''}`}>
 
 <div className="action-tabs">
                 <button onClick={() => setCurrentAction('add')} className={currentAction === 'add' ? 'active' : ''}>Add Book</button>
@@ -670,6 +711,7 @@ const BookActionsPage = () => {
                 <button onClick={() => setCurrentAction('delete')} className={currentAction === 'delete' ? 'active' : ''}>Delete Book</button>
                 <button onClick={() => setCurrentAction('lend')} className={currentAction === 'lend' ? 'active' : ''}>Lend Book</button>
                 <button onClick={() => setCurrentAction('return')} className={currentAction === 'return' ? 'active' : ''}>Return Book</button>
+                <button onClick={() => setCurrentAction('view')} className={currentAction === 'view' ? 'active' : ''}>View Book</button>
 
             </div>
             <Link to="/" className="back-link">&larr; Back to Dashboard</Link>
@@ -994,6 +1036,38 @@ const BookActionsPage = () => {
                             Lend Book
                         </button>
                     </form>
+                </>
+            )}
+            {currentAction === 'view' && (
+                <>
+                    <h1>View Book</h1>
+                    <div className="search-container">
+                        <label htmlFor="searchQuery">Search for a Book to View</label>
+                        <input
+                            type="text"
+                            id="searchQuery"
+                            name="searchQuery"
+                            placeholder="Start typing a book name..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            autoComplete="off"
+                        />
+                        {selectedBook && <button type="button" className="clear-selection-btn" onClick={handleClearSelection}>&times;</button>}
+                        {loadingSearch && <div className="loader"></div>}
+                        {!loadingSearch && searchResults.length > 0 && (
+                            <ul className="search-results">
+                                {searchResults.map(book => (
+                                    <li key={book.bookId} onClick={() => handleSelectBook(book)}>{book.bookName}</li>
+                                ))}
+                            </ul>
+                        )}
+                        {!loadingSearch && searchResults.length === 0 && searchQuery.trim() !== '' && !searchError && !selectedBook && (
+                            <ul className="search-results"><li className="no-results">No books found</li></ul>
+                        )}
+                        {searchError && <p className="error-message" style={{ marginTop: '0.5rem' }}>{searchError}</p>}
+                    </div>
+                    {loadingBookSummary && <p>Loading book summary...</p>}
+                    {!loadingBookSummary && bookSummary && <BookSummaryView summary={bookSummary} />}
                 </>
             )}
             {currentAction === 'return' && (
