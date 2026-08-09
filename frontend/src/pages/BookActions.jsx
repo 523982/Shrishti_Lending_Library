@@ -11,18 +11,27 @@ const calculateReturnSummary = (transaction, returnDetails) => {
         return {
             billedWeeks: 1,
             totalCost: 0,
+            previousAmountPaid: 0,
+            paymentCollected: 0,
             amountPaid: 0,
+            remainingBeforePayment: 0,
             balanceDue: 0,
+            paymentTooHigh: false,
             isSubscription: false,
         };
     }
 
     if (transaction.subscriptionTxnId) {
+        const amountPaid = Number(transaction.amountPaid) || 0;
         return {
             billedWeeks: 0,
             totalCost: Number(transaction.totalAmount) || 0,
-            amountPaid: Number(transaction.amountPaid) || 0,
+            previousAmountPaid: amountPaid,
+            paymentCollected: 0,
+            amountPaid,
+            remainingBeforePayment: 0,
             balanceDue: 0,
+            paymentTooHigh: false,
             isSubscription: true,
         };
     }
@@ -38,14 +47,25 @@ const calculateReturnSummary = (transaction, returnDetails) => {
         ? (Number(transaction.discountAmount) || 0) / Number(transaction.normalAmount)
         : 0;
     const totalCost = Math.max(0, normalCost - (normalCost * discountRate));
-    const amountPaid = Number(transaction.amountPaid) || 0;
+    const previousAmountPaid = Number(transaction.amountPaid) || 0;
+    const remainingBeforePayment = Math.max(0, totalCost - previousAmountPaid);
+    const enteredPayment = returnDetails.amountPaid === '' || returnDetails.amountPaid === null || returnDetails.amountPaid === undefined
+        ? null
+        : Math.max(0, Number(returnDetails.amountPaid) || 0);
+    const paymentCollected = enteredPayment === null ? remainingBeforePayment : enteredPayment;
+    const paymentTooHigh = paymentCollected > remainingBeforePayment;
+    const amountPaid = previousAmountPaid + Math.min(paymentCollected, remainingBeforePayment);
     const balanceDue = Math.max(0, totalCost - amountPaid);
 
     return {
         billedWeeks,
         totalCost,
+        previousAmountPaid,
+        paymentCollected,
         amountPaid,
+        remainingBeforePayment,
         balanceDue,
+        paymentTooHigh,
         isSubscription: false,
     };
 };
@@ -61,8 +81,7 @@ const getTodayInputValue = () => {
 const getInitialLendDetails = () => ({
     pickupDate: getTodayInputValue(),
     isSwap: false,
-    isPartiallyPaid: false,
-    amountPaid: 0,
+    amountPaid: '',
     offerMode: 'NORMAL',
 });
 
@@ -120,19 +139,23 @@ const getOfferPreview = (selectedBook, lendDetails, activeOffer, activeSubscript
     if (lendDetails.offerMode === 'PERCENT' && activeOffer?.offerType === 'PERCENT') {
         const discount = lendingCost * ((Number(activeOffer.discountPercent) || 0) / 100);
         const finalAmount = Math.max(0, lendingCost - discount);
+        const advanceAmount = Math.max(0, Number(lendDetails.amountPaid) || 0);
         return {
             label: 'Discounted first-week amount',
             totalAmount: finalAmount,
-            amountPaid: lendDetails.isPartiallyPaid ? Number(lendDetails.amountPaid) || 0 : finalAmount,
+            amountPaid: advanceAmount,
             bookRevenueAmount: finalAmount,
+            balanceAfterPayment: Math.max(0, finalAmount - advanceAmount),
         };
     }
 
+    const advanceAmount = Math.max(0, Number(lendDetails.amountPaid) || 0);
     return {
         label: 'Normal first-week amount',
         totalAmount: lendingCost,
-        amountPaid: lendDetails.isPartiallyPaid ? Number(lendDetails.amountPaid) || 0 : lendingCost,
+        amountPaid: advanceAmount,
         bookRevenueAmount: lendingCost,
+        balanceAfterPayment: Math.max(0, lendingCost - advanceAmount),
     };
 };
 
@@ -190,6 +213,7 @@ const BookActionsPage = () => {
         const [returnDetails, setReturnDetails] = useState({
             returnDate: new Date().toISOString().split('T')[0], // Default to today
             isSwap: false,
+            amountPaid: '',
         });
 
 
@@ -230,7 +254,7 @@ const BookActionsPage = () => {
             [name]: type === 'checkbox' ? checked : value,
             ...(
                 name === 'offerMode' && ['START_SUBSCRIPTION', 'USE_SUBSCRIPTION'].includes(value)
-                    ? { isSwap: false, isPartiallyPaid: false, amountPaid: 0 }
+                    ? { isSwap: false, amountPaid: '' }
                     : {}
             ),
         }));
@@ -362,8 +386,7 @@ const BookActionsPage = () => {
                     ...prev,
                     offerMode: subscription?.canUseSubscription ? 'USE_SUBSCRIPTION' : 'NORMAL',
                     isSwap: subscription?.canUseSubscription ? false : prev.isSwap,
-                    isPartiallyPaid: subscription?.canUseSubscription ? false : prev.isPartiallyPaid,
-                    amountPaid: subscription?.canUseSubscription ? 0 : prev.amountPaid,
+                    amountPaid: subscription?.canUseSubscription ? '' : prev.amountPaid,
                 }));
             } catch (err) {
                 console.error('Error fetching offer context:', err);
@@ -414,7 +437,7 @@ const BookActionsPage = () => {
             }
             setSelectedReturnTransaction(activeTransaction);
             // Reset return details when a new book is selected
-            setReturnDetails({ returnDate: new Date().toISOString().split('T')[0], isSwap: false });
+            setReturnDetails({ returnDate: new Date().toISOString().split('T')[0], isSwap: false, amountPaid: '' });
         } catch (err) {
             console.error("Error fetching transaction details:", err);
             setError("Could not find active loan details for this book.");
@@ -626,6 +649,7 @@ const BookActionsPage = () => {
         try {
             const isSubscriptionMode = ['START_SUBSCRIPTION', 'USE_SUBSCRIPTION'].includes(selectedOfferMode);
             const preview = getOfferPreview(selectedBook, effectiveLendDetails, activeOffer, activeSubscription);
+            const advanceAmount = Math.max(0, parseFloat(lendDetails.amountPaid) || 0);
                         // Construct the full payload expected by the backend
                         const payload = {
                 bookId: selectedBook.bookId,
@@ -633,8 +657,8 @@ const BookActionsPage = () => {
                 pickupDate: lendDetails.pickupDate,
                 totalAmount: selectedBook.lendingCost,
                 swap: isSubscriptionMode ? false : lendDetails.isSwap,
-                partiallyPaid: isSubscriptionMode ? false : lendDetails.isPartiallyPaid,
-                amountPaid: isSubscriptionMode ? preview.amountPaid : parseFloat(lendDetails.amountPaid) || 0,
+                partiallyPaid: isSubscriptionMode ? false : advanceAmount > 0,
+                amountPaid: isSubscriptionMode ? preview.amountPaid : advanceAmount,
             };
 
             if (selectedOfferMode === 'PERCENT' || selectedOfferMode === 'START_SUBSCRIPTION') {
@@ -669,21 +693,27 @@ const BookActionsPage = () => {
         setError(null);
         setSuccess(null);
         const summary = calculateReturnSummary(selectedReturnTransaction, returnDetails);
+        if (!summary.isSubscription && summary.paymentTooHigh) {
+            setError("Payment collected cannot be more than the pending balance.");
+            return;
+        }
 
         try {
             const payload = {
                 returnDate: returnDetails.returnDate,
                 swap: returnDetails.isSwap,
-                // You can add partial payment logic here if needed
             };
+            if (!summary.isSubscription) {
+                payload.amountPaid = Number(summary.paymentCollected.toFixed(2));
+            }
             // This new endpoint will handle the return logic
             await apiClient.put(`/transactions/${selectedReturnTransaction.bookId}/return`, payload);
-            setSuccess(`Book returned successfully! To be paid: Rs. ${summary.balanceDue.toFixed(2)}.`);
+            setSuccess(`Book returned successfully! Balance pending: Rs. ${summary.balanceDue.toFixed(2)}.`);
 
             // Reset the state
             setReturnBookQuery('');
             setSelectedReturnTransaction(null);
-            setReturnDetails({ returnDate: new Date().toISOString().split('T')[0], isSwap: false });
+            setReturnDetails({ returnDate: new Date().toISOString().split('T')[0], isSwap: false, amountPaid: '' });
 
         } catch (err) {
             console.error("Error returning book:", err);
@@ -1011,19 +1041,29 @@ const BookActionsPage = () => {
                                 {isSubscriptionMode && (
                                     <small>Book revenue for P&amp;L: {currency.format(lendPreview.bookRevenueAmount)}</small>
                                 )}
+                                {!isSubscriptionMode && (
+                                    <>
+                                        <small>Paid now: {currency.format(lendPreview.amountPaid)}</small>
+                                        <small>Estimated balance before extra weeks: {currency.format(lendPreview.balanceAfterPayment)}</small>
+                                    </>
+                                )}
                             </div>
                             <div className="form-group form-group-inline">
                                 <input type="checkbox" id="isSwap" name="isSwap" checked={lendDetails.isSwap} onChange={handleLendDetailsChange} disabled={isSubscriptionMode} />
                                 <label htmlFor="isSwap">Is this a book swap?</label>
                             </div>
-                            <div className="form-group form-group-inline">
-                                <input type="checkbox" id="isPartiallyPaid" name="isPartiallyPaid" checked={lendDetails.isPartiallyPaid} onChange={handleLendDetailsChange} disabled={isSubscriptionMode} />
-                                <label htmlFor="isPartiallyPaid">Is this a partial payment?</label>
-                            </div>
-                            {lendDetails.isPartiallyPaid && (
+                            {!isSubscriptionMode && (
                                 <div className="form-group">
-                                    <label htmlFor="amountPaid">Amount Paid (Rs.)</label>
-                                    <input type="number" id="amountPaid" name="amountPaid" value={lendDetails.amountPaid} min="0" onChange={handleLendDetailsChange} required />
+                                    <label htmlFor="amountPaid">Amount Paid Now (Rs., Optional)</label>
+                                    <input
+                                        type="number"
+                                        id="amountPaid"
+                                        name="amountPaid"
+                                        value={lendDetails.amountPaid}
+                                        min="0"
+                                        placeholder="0"
+                                        onChange={handleLendDetailsChange}
+                                    />
                                 </div>
                             )}
                         </fieldset>
@@ -1114,12 +1154,28 @@ const BookActionsPage = () => {
                                         <input type="checkbox" id="returnIsSwap" name="isSwap" checked={returnDetails.isSwap} onChange={(e) => setReturnDetails(p => ({ ...p, isSwap: e.target.checked }))} />
                                         <label htmlFor="returnIsSwap">Book was swapped?</label>
                                     </div>
-                                    <div className="form-group">
-                                        {(() => {
-                                            const summary = calculateReturnSummary(selectedReturnTransaction, returnDetails);
+                                    {(() => {
+                                        const summary = calculateReturnSummary(selectedReturnTransaction, returnDetails);
 
-                                            return (
-                                                <>
+                                        return (
+                                            <>
+                                                {!summary.isSubscription && summary.remainingBeforePayment > 0 && (
+                                                    <div className="form-group">
+                                                        <label htmlFor="returnAmountPaid">Payment Collected Now (Rs., Optional)</label>
+                                                        <input
+                                                            type="number"
+                                                            id="returnAmountPaid"
+                                                            name="amountPaid"
+                                                            value={returnDetails.amountPaid}
+                                                            min="0"
+                                                            max={summary.remainingBeforePayment}
+                                                            step="0.01"
+                                                            placeholder={`Full balance: Rs. ${summary.remainingBeforePayment.toFixed(2)}`}
+                                                            onChange={(e) => setReturnDetails(p => ({ ...p, amountPaid: e.target.value }))}
+                                                        />
+                                                    </div>
+                                                )}
+                                                <div className="form-group">
                                                     {summary.isSubscription ? (
                                                         <>
                                                             <label>Subscription:</label>
@@ -1133,16 +1189,20 @@ const BookActionsPage = () => {
                                                             <p>{summary.billedWeeks} week{summary.billedWeeks === 1 ? '' : 's'}</p>
                                                             <label>Total Lending Amount:</label>
                                                             <p>Rs. {summary.totalCost.toFixed(2)}</p>
+                                                            <label>Already Paid:</label>
+                                                            <p>Rs. {summary.previousAmountPaid.toFixed(2)}</p>
+                                                            <label>Payment This Return:</label>
+                                                            <p>Rs. {summary.paymentCollected.toFixed(2)}</p>
                                                         </>
                                                     )}
                                                     <label>Amount Paid:</label>
                                                     <p>Rs. {summary.amountPaid.toFixed(2)}</p>
-                                                    <label>To Be Paid:</label>
+                                                    <label>Balance Pending:</label>
                                                     <p className="calculated-cost">Rs. {summary.balanceDue.toFixed(2)}</p>
-                                                </>
-                                            );
-                                        })()}
-                                    </div>
+                                                </div>
+                                            </>
+                                        );
+                                    })()}
                                 </fieldset>
                                 <button type="submit" className="submit-button">Process Return</button>
                             </>
