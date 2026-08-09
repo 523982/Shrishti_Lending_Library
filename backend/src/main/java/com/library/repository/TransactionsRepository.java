@@ -28,5 +28,9 @@ import org.springframework.stereotype.Repository;
 		
 		@Query(value="SELECT t.*,customer_name, mobile_number,b.lending_cost  FROM TRANSACTIONS t, INVENTORY b,customers c where t.customer_id=c.customer_id and t.book_id=b.book_id and status_id=2 and return_date is null and t.book_id=:bookId",nativeQuery = true)
 		List<Transactions> findLentBooks(@Param("bookId") Long bookId );;
+
+		List<Transactions> findByCustomersCustomerIdAndSubscriptionStatus(String customerId, String subscriptionStatus);
+
+		List<Transactions> findBySubscriptionTxnIdOrderByBundleBookNoAsc(String subscriptionTxnId);
 	}
 

@@ -26,6 +26,12 @@ public class Communities {
 	
 	@Column(name = "community_name", nullable = false, unique = true)
 	private String communityName;
+
+	@Column(name = "active_offer_id")
+	private Long activeOfferId;
+
+	@Column(name = "is_offer_active")
+	private boolean offerActive;
 	
 	
 	public void setCommunityId(Long communityId) {
@@ -34,6 +40,22 @@ public class Communities {
 
 	public void setCommunityName(String communityName) {
 		this.communityName = communityName;
+	}
+
+	public Long getActiveOfferId() {
+		return activeOfferId;
+	}
+
+	public void setActiveOfferId(Long activeOfferId) {
+		this.activeOfferId = activeOfferId;
+	}
+
+	public boolean isOfferActive() {
+		return offerActive;
+	}
+
+	public void setOfferActive(boolean offerActive) {
+		this.offerActive = offerActive;
 	}
 
 	public Long getCommunityId() {

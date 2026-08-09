@@ -48,6 +48,37 @@ public class Transactions {
     @Column(name = "amount_paid")
     private BigDecimal amountPaid;
 
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "offer_id")
+    private Offers offer;
+
+    @Column(name = "subscription_txn_id")
+    private String subscriptionTxnId;
+
+    @Column(name = "bundle_book_no")
+    private Integer bundleBookNo;
+
+    @Column(name = "bundle_book_limit")
+    private Integer bundleBookLimit;
+
+    @Column(name = "subscription_status")
+    private String subscriptionStatus;
+
+    @Column(name = "subscription_start_date")
+    private LocalDate subscriptionStartDate;
+
+    @Column(name = "subscription_end_date")
+    private LocalDate subscriptionEndDate;
+
+    @Column(name = "normal_amount")
+    private BigDecimal normalAmount;
+
+    @Column(name = "discount_amount")
+    private BigDecimal discountAmount;
+
+    @Column(name = "book_revenue_amount")
+    private BigDecimal bookRevenueAmount;
+
     @PrePersist
     public void setDefaults() {
         if (this.pickupDate == null) {
@@ -125,6 +156,86 @@ public class Transactions {
 
 	public void setAmountPaid(BigDecimal amountPaid) {
 		this.amountPaid = amountPaid;
+	}
+
+	public Offers getOffer() {
+		return offer;
+	}
+
+	public void setOffer(Offers offer) {
+		this.offer = offer;
+	}
+
+	public String getSubscriptionTxnId() {
+		return subscriptionTxnId;
+	}
+
+	public void setSubscriptionTxnId(String subscriptionTxnId) {
+		this.subscriptionTxnId = subscriptionTxnId;
+	}
+
+	public Integer getBundleBookNo() {
+		return bundleBookNo;
+	}
+
+	public void setBundleBookNo(Integer bundleBookNo) {
+		this.bundleBookNo = bundleBookNo;
+	}
+
+	public Integer getBundleBookLimit() {
+		return bundleBookLimit;
+	}
+
+	public void setBundleBookLimit(Integer bundleBookLimit) {
+		this.bundleBookLimit = bundleBookLimit;
+	}
+
+	public String getSubscriptionStatus() {
+		return subscriptionStatus;
+	}
+
+	public void setSubscriptionStatus(String subscriptionStatus) {
+		this.subscriptionStatus = subscriptionStatus;
+	}
+
+	public LocalDate getSubscriptionStartDate() {
+		return subscriptionStartDate;
+	}
+
+	public void setSubscriptionStartDate(LocalDate subscriptionStartDate) {
+		this.subscriptionStartDate = subscriptionStartDate;
+	}
+
+	public LocalDate getSubscriptionEndDate() {
+		return subscriptionEndDate;
+	}
+
+	public void setSubscriptionEndDate(LocalDate subscriptionEndDate) {
+		this.subscriptionEndDate = subscriptionEndDate;
+	}
+
+	public BigDecimal getNormalAmount() {
+		return normalAmount;
+	}
+
+	public void setNormalAmount(BigDecimal normalAmount) {
+		this.normalAmount = normalAmount;
+	}
+
+	public BigDecimal getDiscountAmount() {
+		return discountAmount;
+	}
+
+	public void setDiscountAmount(BigDecimal discountAmount) {
+		this.discountAmount = discountAmount;
+	}
+
+	public BigDecimal getBookRevenueAmount() {
+		return bookRevenueAmount;
+	}
+
+	public void setBookRevenueAmount(BigDecimal bookRevenueAmount) {
+		this.bookRevenueAmount = bookRevenueAmount;
 	}
 }
 

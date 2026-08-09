@@ -3,6 +3,7 @@ package com.library.controller;
 
 import com.library.dto.LendRequestDTO;
 import com.library.dto.ReturnRequestDTO;
+import com.library.dto.SubscriptionStatusDTO;
 import com.library.dto.TransactionResponseDTO;
 import com.library.model.Transactions;
 import com.library.service.TransactionsService;
@@ -38,6 +39,11 @@ import java.util.List;
 	    @GetMapping("/book/{id}/active")
 	    public List<TransactionResponseDTO> lentBooks(@PathVariable(value = "id") Long bookId){
 	    	return transactionsService.lentBooks(bookId);
+	    }
+
+	    @GetMapping("/customers/{id}/active-subscription")
+	    public SubscriptionStatusDTO getActiveSubscription(@PathVariable(value = "id") String customerId) {
+	    	return transactionsService.getActiveSubscriptionForCustomer(customerId);
 	    }
 	    
 	    // Endpoint to lend a book

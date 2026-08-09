@@ -2,16 +2,20 @@ package com.library.service;
 
 import com.library.dto.LendRequestDTO;
 import com.library.dto.ReturnRequestDTO;
+import com.library.dto.SubscriptionStatusDTO;
 import com.library.dto.TransactionResponseDTO;
 import com.library.enums.BookStatusEnum;
+import com.library.enums.OfferType;
 import com.library.exception.ResourceNotFoundException;
 import com.library.model.BookStatus;
 import com.library.model.Books;
 import com.library.model.Customers;
+import com.library.model.Offers;
 import com.library.model.Transactions;
 import com.library.repository.BooksRepository;
 import com.library.repository.BooksStatusRepository;
 import com.library.repository.CustomersRepository;
+import com.library.repository.OffersRepository;
 import com.library.repository.TransactionsRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,6 +24,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -27,18 +32,24 @@ import java.util.stream.Collectors;
 public class TransactionsService {
 
 	public TransactionsService(TransactionsRepository transactionsRepository, BooksRepository booksRepository,
-			CustomersRepository customersRepository,BooksStatusRepository booksStatusRepository) {
+			CustomersRepository customersRepository, BooksStatusRepository booksStatusRepository,
+			OffersRepository offersRepository) {
 		super();
 		this.transactionsRepository = transactionsRepository;
 		this.booksRepository = booksRepository;
 		this.customersRepository = customersRepository;
 		this.booksStatusRepository=booksStatusRepository;
+		this.offersRepository = offersRepository;
 	}
 
 	private final TransactionsRepository transactionsRepository;
 	private final BooksRepository booksRepository;
 	private final BooksStatusRepository booksStatusRepository;
 	private final CustomersRepository customersRepository;
+	private final OffersRepository offersRepository;
+	private static final String SUBSCRIPTION_ACTIVE = "ACTIVE";
+	private static final String SUBSCRIPTION_CLOSED = "CLOSED";
+	private static final String SUBSCRIPTION_EXPIRED = "EXPIRED";
 
 	public List<TransactionResponseDTO> getAllTransactions() {
 		return transactionsRepository.findAll().stream().map(this::convertToDto).collect(Collectors.toList());
@@ -59,6 +70,18 @@ public class TransactionsService {
 		return "TXN" + nextNumber;
 	}
 
+	public SubscriptionStatusDTO getActiveSubscriptionForCustomer(String customerId) {
+		List<Transactions> activeRows = getActiveSubscriptionRows(customerId, LocalDate.now());
+		if (activeRows.isEmpty()) {
+			SubscriptionStatusDTO dto = new SubscriptionStatusDTO();
+			dto.setHasActiveSubscription(false);
+			dto.setCanUseSubscription(false);
+			return dto;
+		}
+
+		return buildSubscriptionStatus(activeRows);
+	}
+
 	@Transactional
 	public Transactions lendBook(LendRequestDTO lendRequest) {
 		Books book = booksRepository.findById(lendRequest.getBookId())
@@ -73,27 +96,36 @@ public class TransactionsService {
 		Customers customer = customersRepository.findById(lendRequest.getCustomerId()).orElseThrow(
 				() -> new ResourceNotFoundException("Customer not found with id: " + lendRequest.getCustomerId()));
 
-		BigDecimal amountPaid = lendRequest.getAmountPaid();
-		// Business logic: If not partially paid, amount paid must equal total amount.
-		if (!lendRequest.isPartiallyPaid()) {
-			amountPaid = lendRequest.getTotalAmount();
-		}
+		LocalDate pickupDate = lendRequest.getPickupDate() != null ? lendRequest.getPickupDate() : LocalDate.now();
+		String transactionId = generateNextTransactionId();
+		Transactions transaction = new Transactions();
+		transaction.setTransactionId(transactionId);
+		transaction.setBooks(book);
+		transaction.setCustomers(customer);
+		transaction.setPickupDate(pickupDate);
+		transaction.setSwap(lendRequest.isSwap());
 
 		// Update book status
 		book.setBookStatus(unavailableStatus);
 		booksRepository.save(book);
 
-		// Create and save the transaction
-		Transactions transaction = new Transactions();
+		if (lendRequest.getSubscriptionTxnId() != null && !lendRequest.getSubscriptionTxnId().isBlank()) {
+			applyExistingSubscription(transaction, lendRequest.getSubscriptionTxnId(), customer, book, pickupDate);
+		} else if (lendRequest.getOfferId() != null) {
+			Offers offer = getValidOffer(lendRequest.getOfferId(), customer, pickupDate);
+			List<Transactions> activeSubscriptionRows = getActiveSubscriptionRows(customer.getCustomerId(), pickupDate);
+			if (!activeSubscriptionRows.isEmpty()) {
+				throw new IllegalStateException("Customer already has an active subscription. Close or expire it before applying another offer.");
+			}
 
-		transaction.setTransactionId(generateNextTransactionId()); // Assuming String ID
-		transaction.setBooks(book);
-		transaction.setCustomers(customer);
-		transaction.setPickupDate(lendRequest.getPickupDate() != null ? lendRequest.getPickupDate() : LocalDate.now());
-		transaction.setTotalAmount(lendRequest.getTotalAmount());
-		transaction.setSwap(lendRequest.isSwap());
-		transaction.setPartiallyPaid(lendRequest.isPartiallyPaid());
-		transaction.setAmountPaid(amountPaid);
+			if (offer.getOfferType() == OfferType.BUNDLE) {
+				startSubscription(transaction, offer, book, pickupDate);
+			} else {
+				applyPercentOffer(transaction, lendRequest, offer, book);
+			}
+		} else {
+			applyNormalLending(transaction, lendRequest, book);
+		}
 
 		return transactionsRepository.save(transaction);
 	}
@@ -125,19 +157,32 @@ public class TransactionsService {
 			throw new IllegalArgumentException("Return date cannot be before lend date.");
 		}
 
-		long days = ChronoUnit.DAYS.between(transactions.getPickupDate(), returnDate);
-		long weeks = Math.max(1L, (days + 6L) / 7L);
 		boolean isSwap = returnRequest != null ? returnRequest.isSwap() : transactions.isSwap();
-		BigDecimal finalAmount = transactions.getBooks().getLendingCost().multiply(BigDecimal.valueOf(weeks));
-		if (isSwap) {
-			finalAmount = finalAmount.divide(BigDecimal.valueOf(2), 2, RoundingMode.HALF_UP);
-		}
 
 		transactions.setReturnDate(returnDate);
 		transactions.setSwap(isSwap);
-		transactions.setTotalAmount(finalAmount);
-		if (!transactions.isPartiallyPaid()) {
-			transactions.setAmountPaid(finalAmount);
+		if (transactions.getSubscriptionTxnId() == null) {
+			long days = ChronoUnit.DAYS.between(transactions.getPickupDate(), returnDate);
+			long weeks = Math.max(1L, (days + 6L) / 7L);
+			BigDecimal normalAmount = money(transactions.getBooks().getLendingCost().multiply(BigDecimal.valueOf(weeks)));
+			if (isSwap) {
+				normalAmount = money(normalAmount.divide(BigDecimal.valueOf(2), 2, RoundingMode.HALF_UP));
+			}
+
+			BigDecimal finalAmount = normalAmount;
+			BigDecimal discountAmount = BigDecimal.ZERO;
+			if (transactions.getOffer() != null && transactions.getOffer().getOfferType() == OfferType.PERCENT) {
+				discountAmount = calculatePercentDiscount(normalAmount, transactions.getOffer());
+				finalAmount = money(normalAmount.subtract(discountAmount));
+			}
+
+			transactions.setNormalAmount(normalAmount);
+			transactions.setDiscountAmount(discountAmount);
+			transactions.setTotalAmount(finalAmount);
+			transactions.setBookRevenueAmount(finalAmount);
+			if (!transactions.isPartiallyPaid()) {
+				transactions.setAmountPaid(finalAmount);
+			}
 		}
 
 		Books books = transactions.getBooks();
@@ -145,8 +190,239 @@ public class TransactionsService {
 		booksRepository.save(books);
 
 		Transactions savedTransaction = transactionsRepository.save(transactions);
+		if (savedTransaction.getSubscriptionTxnId() != null) {
+			refreshSubscriptionStatus(savedTransaction.getSubscriptionTxnId(), returnDate);
+			savedTransaction = transactionsRepository.findById(savedTransaction.getTransactionId()).orElse(savedTransaction);
+		}
 		return convertToDto(savedTransaction);
 
+	}
+
+	private void applyNormalLending(Transactions transaction, LendRequestDTO lendRequest, Books book) {
+		BigDecimal totalAmount = money(lendRequest.getTotalAmount() != null ? lendRequest.getTotalAmount() : book.getLendingCost());
+		BigDecimal amountPaid = lendRequest.isPartiallyPaid() ? money(lendRequest.getAmountPaid()) : totalAmount;
+
+		transaction.setTotalAmount(totalAmount);
+		transaction.setNormalAmount(totalAmount);
+		transaction.setDiscountAmount(BigDecimal.ZERO);
+		transaction.setBookRevenueAmount(totalAmount);
+		transaction.setPartiallyPaid(lendRequest.isPartiallyPaid());
+		transaction.setAmountPaid(amountPaid);
+	}
+
+	private void applyPercentOffer(Transactions transaction, LendRequestDTO lendRequest, Offers offer, Books book) {
+		BigDecimal normalAmount = money(lendRequest.getTotalAmount() != null ? lendRequest.getTotalAmount() : book.getLendingCost());
+		BigDecimal discountAmount = calculatePercentDiscount(normalAmount, offer);
+		BigDecimal finalAmount = money(normalAmount.subtract(discountAmount));
+		BigDecimal amountPaid = lendRequest.isPartiallyPaid() ? money(lendRequest.getAmountPaid()) : finalAmount;
+
+		transaction.setOffer(offer);
+		transaction.setTotalAmount(finalAmount);
+		transaction.setNormalAmount(normalAmount);
+		transaction.setDiscountAmount(discountAmount);
+		transaction.setBookRevenueAmount(finalAmount);
+		transaction.setPartiallyPaid(lendRequest.isPartiallyPaid());
+		transaction.setAmountPaid(amountPaid);
+	}
+
+	private void startSubscription(Transactions transaction, Offers offer, Books book, LocalDate pickupDate) {
+		validateBundleOffer(offer);
+		BigDecimal bookRevenueAmount = calculateBundleBookRevenue(offer);
+
+		transaction.setOffer(offer);
+		transaction.setSubscriptionTxnId(transaction.getTransactionId());
+		transaction.setBundleBookNo(1);
+		transaction.setBundleBookLimit(offer.getBundleBookCount());
+		transaction.setSubscriptionStatus(SUBSCRIPTION_ACTIVE);
+		transaction.setSubscriptionStartDate(pickupDate);
+		transaction.setSubscriptionEndDate(pickupDate.plusDays(offer.getBundleDurationDays()));
+		transaction.setTotalAmount(money(offer.getBundlePrice()));
+		transaction.setAmountPaid(money(offer.getBundlePrice()));
+		transaction.setNormalAmount(money(book.getLendingCost()));
+		transaction.setDiscountAmount(money(book.getLendingCost()).subtract(bookRevenueAmount).max(BigDecimal.ZERO));
+		transaction.setBookRevenueAmount(bookRevenueAmount);
+		transaction.setPartiallyPaid(false);
+		transaction.setSwap(false);
+	}
+
+	private void applyExistingSubscription(Transactions transaction, String subscriptionTxnId, Customers customer, Books book, LocalDate pickupDate) {
+		refreshSubscriptionStatus(subscriptionTxnId, pickupDate);
+		List<Transactions> subscriptionRows = transactionsRepository.findBySubscriptionTxnIdOrderByBundleBookNoAsc(subscriptionTxnId);
+		if (subscriptionRows.isEmpty()) {
+			throw new ResourceNotFoundException("Subscription not found with id: " + subscriptionTxnId);
+		}
+
+		Transactions parent = getParentSubscriptionTransaction(subscriptionRows, subscriptionTxnId);
+		if (!customer.getCustomerId().equals(parent.getCustomers().getCustomerId())) {
+			throw new IllegalStateException("Subscription belongs to another customer.");
+		}
+		if (!SUBSCRIPTION_ACTIVE.equals(parent.getSubscriptionStatus())) {
+			throw new IllegalStateException("Subscription is not active.");
+		}
+		if (parent.getSubscriptionEndDate() != null && pickupDate.isAfter(parent.getSubscriptionEndDate())) {
+			refreshSubscriptionStatus(subscriptionTxnId, pickupDate);
+			throw new IllegalStateException("Subscription has expired.");
+		}
+
+		int usedBooks = subscriptionRows.size();
+		int limit = parent.getBundleBookLimit() == null ? usedBooks : parent.getBundleBookLimit();
+		if (usedBooks >= limit) {
+			throw new IllegalStateException("Subscription book limit is already used.");
+		}
+
+		BigDecimal bookRevenueAmount = parent.getBookRevenueAmount() != null
+				? money(parent.getBookRevenueAmount())
+				: calculateBundleBookRevenue(parent.getOffer());
+
+		transaction.setOffer(parent.getOffer());
+		transaction.setSubscriptionTxnId(subscriptionTxnId);
+		transaction.setBundleBookNo(usedBooks + 1);
+		transaction.setBundleBookLimit(limit);
+		transaction.setSubscriptionStatus(SUBSCRIPTION_ACTIVE);
+		transaction.setSubscriptionStartDate(parent.getSubscriptionStartDate());
+		transaction.setSubscriptionEndDate(parent.getSubscriptionEndDate());
+		transaction.setTotalAmount(BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP));
+		transaction.setAmountPaid(BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP));
+		transaction.setNormalAmount(money(book.getLendingCost()));
+		transaction.setDiscountAmount(money(book.getLendingCost()).subtract(bookRevenueAmount).max(BigDecimal.ZERO));
+		transaction.setBookRevenueAmount(bookRevenueAmount);
+		transaction.setPartiallyPaid(false);
+		transaction.setSwap(false);
+	}
+
+	private Offers getValidOffer(Long offerId, Customers customer, LocalDate effectiveDate) {
+		Offers offer = offersRepository.findById(offerId)
+				.orElseThrow(() -> new ResourceNotFoundException("Offer not found with id: " + offerId));
+
+		Long customerCommunityId = customer.getCommunity() == null ? null : customer.getCommunity().getCommunityId();
+		Long offerCommunityId = offer.getCommunity() == null ? null : offer.getCommunity().getCommunityId();
+
+		if (customerCommunityId == null || !customerCommunityId.equals(offerCommunityId)) {
+			throw new IllegalStateException("Offer does not apply to the customer's community.");
+		}
+		if (!offer.isActive() || effectiveDate.isBefore(offer.getStartDate()) || effectiveDate.isAfter(offer.getEndDate())) {
+			throw new IllegalStateException("Offer is not active for the selected lend date.");
+		}
+
+		return offer;
+	}
+
+	private void validateBundleOffer(Offers offer) {
+		if (offer.getBundleBookCount() == null || offer.getBundleBookCount() <= 0) {
+			throw new IllegalStateException("Bundle offer needs a valid book count.");
+		}
+		if (offer.getBundlePrice() == null || offer.getBundlePrice().compareTo(BigDecimal.ZERO) <= 0) {
+			throw new IllegalStateException("Bundle offer needs a valid bundle price.");
+		}
+		if (offer.getBundleDurationDays() == null || offer.getBundleDurationDays() <= 0) {
+			throw new IllegalStateException("Bundle offer needs a valid duration.");
+		}
+	}
+
+	private BigDecimal calculateBundleBookRevenue(Offers offer) {
+		validateBundleOffer(offer);
+		return money(offer.getBundlePrice().divide(BigDecimal.valueOf(offer.getBundleBookCount()), 2, RoundingMode.HALF_UP));
+	}
+
+	private BigDecimal calculatePercentDiscount(BigDecimal amount, Offers offer) {
+		BigDecimal percent = offer.getDiscountPercent() == null ? BigDecimal.ZERO : offer.getDiscountPercent();
+		return money(amount.multiply(percent).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP));
+	}
+
+	private BigDecimal money(BigDecimal value) {
+		return value == null ? BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP) : value.setScale(2, RoundingMode.HALF_UP);
+	}
+
+	private List<Transactions> getActiveSubscriptionRows(String customerId, LocalDate effectiveDate) {
+		List<Transactions> activeRows = transactionsRepository
+				.findByCustomersCustomerIdAndSubscriptionStatus(customerId, SUBSCRIPTION_ACTIVE)
+				.stream()
+				.filter(transaction -> transaction.getSubscriptionTxnId() != null)
+				.collect(Collectors.toList());
+
+		activeRows.stream()
+				.map(Transactions::getSubscriptionTxnId)
+				.distinct()
+				.forEach(subscriptionTxnId -> refreshSubscriptionStatus(subscriptionTxnId, effectiveDate));
+
+		return transactionsRepository.findByCustomersCustomerIdAndSubscriptionStatus(customerId, SUBSCRIPTION_ACTIVE)
+				.stream()
+				.filter(transaction -> transaction.getSubscriptionTxnId() != null)
+				.collect(Collectors.toList());
+	}
+
+	private void refreshSubscriptionStatus(String subscriptionTxnId, LocalDate effectiveDate) {
+		List<Transactions> subscriptionRows = transactionsRepository.findBySubscriptionTxnIdOrderByBundleBookNoAsc(subscriptionTxnId);
+		if (subscriptionRows.isEmpty()) {
+			return;
+		}
+
+		Transactions parent = getParentSubscriptionTransaction(subscriptionRows, subscriptionTxnId);
+		int usedBooks = subscriptionRows.size();
+		int limit = parent.getBundleBookLimit() == null ? usedBooks : parent.getBundleBookLimit();
+		boolean allReturned = subscriptionRows.stream().allMatch(transaction -> transaction.getReturnDate() != null);
+		LocalDate checkDate = effectiveDate == null ? LocalDate.now() : effectiveDate;
+		String nextStatus = SUBSCRIPTION_ACTIVE;
+
+		if (usedBooks >= limit && allReturned) {
+			nextStatus = SUBSCRIPTION_CLOSED;
+		} else if (parent.getSubscriptionEndDate() != null && checkDate.isAfter(parent.getSubscriptionEndDate())) {
+			nextStatus = SUBSCRIPTION_EXPIRED;
+		}
+
+		final String status = nextStatus;
+		boolean changed = subscriptionRows.stream()
+				.anyMatch(transaction -> !status.equals(transaction.getSubscriptionStatus()));
+		if (changed) {
+			subscriptionRows.forEach(transaction -> transaction.setSubscriptionStatus(status));
+			transactionsRepository.saveAll(subscriptionRows);
+		}
+	}
+
+	private Transactions getParentSubscriptionTransaction(List<Transactions> subscriptionRows, String subscriptionTxnId) {
+		return subscriptionRows.stream()
+				.filter(transaction -> subscriptionTxnId.equals(transaction.getTransactionId()))
+				.findFirst()
+				.orElseGet(() -> subscriptionRows.stream()
+						.min(Comparator.comparing(transaction -> transaction.getBundleBookNo() == null ? 0 : transaction.getBundleBookNo()))
+						.orElse(subscriptionRows.get(0)));
+	}
+
+	private SubscriptionStatusDTO buildSubscriptionStatus(List<Transactions> rows) {
+		String subscriptionTxnId = rows.get(0).getSubscriptionTxnId();
+		Transactions parent = getParentSubscriptionTransaction(rows, subscriptionTxnId);
+		int booksUsed = rows.size();
+		int booksReturned = (int) rows.stream().filter(transaction -> transaction.getReturnDate() != null).count();
+		int openBooks = booksUsed - booksReturned;
+		int limit = parent.getBundleBookLimit() == null ? booksUsed : parent.getBundleBookLimit();
+		BigDecimal amountPaid = rows.stream()
+				.map(Transactions::getAmountPaid)
+				.map(this::money)
+				.reduce(BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP), BigDecimal::add);
+		boolean canUse = SUBSCRIPTION_ACTIVE.equals(parent.getSubscriptionStatus())
+				&& booksUsed < limit
+				&& (parent.getSubscriptionEndDate() == null || !LocalDate.now().isAfter(parent.getSubscriptionEndDate()));
+
+		SubscriptionStatusDTO dto = new SubscriptionStatusDTO();
+		dto.setHasActiveSubscription(true);
+		dto.setCanUseSubscription(canUse);
+		dto.setSubscriptionTxnId(subscriptionTxnId);
+		dto.setBooksUsed(booksUsed);
+		dto.setBooksReturned(booksReturned);
+		dto.setOpenBooks(openBooks);
+		dto.setBundleBookLimit(limit);
+		dto.setAmountPaid(amountPaid);
+		dto.setBookRevenueAmount(parent.getBookRevenueAmount());
+		dto.setSubscriptionStatus(parent.getSubscriptionStatus());
+		dto.setSubscriptionStartDate(parent.getSubscriptionStartDate());
+		dto.setSubscriptionEndDate(parent.getSubscriptionEndDate());
+
+		if (parent.getOffer() != null) {
+			dto.setOfferId(parent.getOffer().getOfferId());
+			dto.setOfferName(parent.getOffer().getOfferName());
+		}
+
+		return dto;
 	}
 
 	private BookStatus getOrCreateBookStatus(Long statusId, BookStatusEnum statusDesc) {
@@ -167,6 +443,15 @@ public class TransactionsService {
 		dto.setSwap(transaction.isSwap());
 		dto.setPartiallyPaid(transaction.isPartiallyPaid());
 		dto.setAmountPaid(transaction.getAmountPaid());
+		dto.setSubscriptionTxnId(transaction.getSubscriptionTxnId());
+		dto.setBundleBookNo(transaction.getBundleBookNo());
+		dto.setBundleBookLimit(transaction.getBundleBookLimit());
+		dto.setSubscriptionStatus(transaction.getSubscriptionStatus());
+		dto.setSubscriptionStartDate(transaction.getSubscriptionStartDate());
+		dto.setSubscriptionEndDate(transaction.getSubscriptionEndDate());
+		dto.setNormalAmount(transaction.getNormalAmount());
+		dto.setDiscountAmount(transaction.getDiscountAmount());
+		dto.setBookRevenueAmount(transaction.getBookRevenueAmount());
 
 		dto.setCustomerId(transaction.getCustomers().getCustomerId());
 		dto.setCustomerName(transaction.getCustomers().getCustomerName());
@@ -175,6 +460,12 @@ public class TransactionsService {
 		dto.setBookId(transaction.getBooks().getBookId());
 		dto.setBookName(transaction.getBooks().getBookName());
 		dto.setLendingCost(transaction.getBooks().getLendingCost());
+
+		if (transaction.getOffer() != null) {
+			dto.setOfferId(transaction.getOffer().getOfferId());
+			dto.setOfferName(transaction.getOffer().getOfferName());
+			dto.setOfferType(transaction.getOffer().getOfferType() == null ? null : transaction.getOffer().getOfferType().name());
+		}
 		
 
 		return dto;

@@ -21,6 +21,18 @@ public class TransactionResponseDTO {
 	    private boolean isSwap;
 	    private boolean isPartiallyPaid;
 	    private BigDecimal amountPaid;
+	    private Long offerId;
+	    private String offerName;
+	    private String offerType;
+	    private String subscriptionTxnId;
+	    private Integer bundleBookNo;
+	    private Integer bundleBookLimit;
+	    private String subscriptionStatus;
+	    private LocalDate subscriptionStartDate;
+	    private LocalDate subscriptionEndDate;
+	    private BigDecimal normalAmount;
+	    private BigDecimal discountAmount;
+	    private BigDecimal bookRevenueAmount;
 	    
 	    
 	    public String getTransactionId() {
@@ -101,4 +113,76 @@ public class TransactionResponseDTO {
 		public void setAmountPaid(BigDecimal amountPaid) {
 			this.amountPaid = amountPaid;
 	}
+		public Long getOfferId() {
+			return offerId;
+		}
+		public void setOfferId(Long offerId) {
+			this.offerId = offerId;
+		}
+		public String getOfferName() {
+			return offerName;
+		}
+		public void setOfferName(String offerName) {
+			this.offerName = offerName;
+		}
+		public String getOfferType() {
+			return offerType;
+		}
+		public void setOfferType(String offerType) {
+			this.offerType = offerType;
+		}
+		public String getSubscriptionTxnId() {
+			return subscriptionTxnId;
+		}
+		public void setSubscriptionTxnId(String subscriptionTxnId) {
+			this.subscriptionTxnId = subscriptionTxnId;
+		}
+		public Integer getBundleBookNo() {
+			return bundleBookNo;
+		}
+		public void setBundleBookNo(Integer bundleBookNo) {
+			this.bundleBookNo = bundleBookNo;
+		}
+		public Integer getBundleBookLimit() {
+			return bundleBookLimit;
+		}
+		public void setBundleBookLimit(Integer bundleBookLimit) {
+			this.bundleBookLimit = bundleBookLimit;
+		}
+		public String getSubscriptionStatus() {
+			return subscriptionStatus;
+		}
+		public void setSubscriptionStatus(String subscriptionStatus) {
+			this.subscriptionStatus = subscriptionStatus;
+		}
+		public LocalDate getSubscriptionStartDate() {
+			return subscriptionStartDate;
+		}
+		public void setSubscriptionStartDate(LocalDate subscriptionStartDate) {
+			this.subscriptionStartDate = subscriptionStartDate;
+		}
+		public LocalDate getSubscriptionEndDate() {
+			return subscriptionEndDate;
+		}
+		public void setSubscriptionEndDate(LocalDate subscriptionEndDate) {
+			this.subscriptionEndDate = subscriptionEndDate;
+		}
+		public BigDecimal getNormalAmount() {
+			return normalAmount;
+		}
+		public void setNormalAmount(BigDecimal normalAmount) {
+			this.normalAmount = normalAmount;
+		}
+		public BigDecimal getDiscountAmount() {
+			return discountAmount;
+		}
+		public void setDiscountAmount(BigDecimal discountAmount) {
+			this.discountAmount = discountAmount;
+		}
+		public BigDecimal getBookRevenueAmount() {
+			return bookRevenueAmount;
+		}
+		public void setBookRevenueAmount(BigDecimal bookRevenueAmount) {
+			this.bookRevenueAmount = bookRevenueAmount;
+		}
 		}

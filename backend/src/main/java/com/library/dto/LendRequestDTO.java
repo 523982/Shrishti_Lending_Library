@@ -14,6 +14,8 @@ public class LendRequestDTO {
     private boolean isSwap;
     private boolean isPartiallyPaid;
     private BigDecimal amountPaid;
+    private Long offerId;
+    private String subscriptionTxnId;
 	public Long getBookId() {
 		return bookId;
 	}
@@ -55,6 +57,18 @@ public class LendRequestDTO {
 	}
 	public void setAmountPaid(BigDecimal amountPaid) {
 		this.amountPaid = amountPaid;
+	}
+	public Long getOfferId() {
+		return offerId;
+	}
+	public void setOfferId(Long offerId) {
+		this.offerId = offerId;
+	}
+	public String getSubscriptionTxnId() {
+		return subscriptionTxnId;
+	}
+	public void setSubscriptionTxnId(String subscriptionTxnId) {
+		this.subscriptionTxnId = subscriptionTxnId;
 	}
     
 }
