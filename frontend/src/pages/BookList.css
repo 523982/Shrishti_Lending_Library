@@ -20,6 +20,24 @@
     font-weight: 600;
 }
 
+.collection-header .cache-status-note {
+    display: inline-block;
+    margin-top: 0.5rem;
+    padding: 0.3rem 0.55rem;
+    border-radius: 6px;
+    font-size: 0.86rem;
+}
+
+.cache-status-note.cached {
+    background: #fff3cd;
+    color: #7a5200;
+}
+
+.cache-status-note.fresh {
+    background: #d1e7dd;
+    color: #0f5132;
+}
+
 .book-filters {
     display: flex;
     align-items: flex-end;

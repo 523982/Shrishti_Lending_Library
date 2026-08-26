@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import apiClient from '../services/api';
 import { BookSummaryView } from '../components/SummaryViews';
@@ -83,6 +83,16 @@ const getInitialLendDetails = () => ({
     isSwap: false,
     amountPaid: '',
     offerMode: 'NORMAL',
+});
+
+const getInitialBookData = () => ({
+    bookName: '',
+    author: '',
+    genre: '',
+    purchasePrice: '',
+    purchaseDate: getTodayInputValue(),
+    lendingCost: '',
+    imageUrl: '',
 });
 
 const currency = new Intl.NumberFormat('en-IN', {
@@ -175,15 +185,9 @@ const getOfferPreview = (selectedBook, lendDetails, activeOffer, activeSubscript
 //Adding, Modifying, Deleting & Lending Books
 const BookActionsPage = () => {
     // State for the "Add Book" form
-    const [bookData, setBookData] = useState({
-        bookName: '',
-        author: '',
-        genre: '',
-        purchasePrice: '',
-        purchaseDate: getTodayInputValue(),
-        lendingCost: '',
-        imageUrl: '',
-    });
+    const [bookData, setBookData] = useState(getInitialBookData());
+    const [isAddingBook, setIsAddingBook] = useState(false);
+    const addBookRequestInFlight = useRef(false);
 
         // State for the "Modify Book" functionality
         const [currentAction, setCurrentAction] = useState('add');
@@ -589,6 +593,12 @@ const BookActionsPage = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (addBookRequestInFlight.current) {
+            return;
+        }
+
+        addBookRequestInFlight.current = true;
+        setIsAddingBook(true);
         setError(null);
         setSuccess(null);
 
@@ -603,15 +613,7 @@ const BookActionsPage = () => {
             const response = await apiClient.post('/books', payload);
             const newBook = response.data;
 
-            setBookData({
-                bookName: '',
-                author: '',
-                genre: '',
-                purchasePrice: '',
-                purchaseDate: getTodayInputValue(),
-                lendingCost: '',
-                imageUrl: '',
-            });
+            setBookData(getInitialBookData());
 
             if (returnToLendAfterAdd) {
                 setSelectedBook(newBook);
@@ -624,11 +626,13 @@ const BookActionsPage = () => {
                 return;
             }
 
-            setSuccess('Book added successfully! Redirecting...');
-            setTimeout(() => navigate('/browse'), 2000);
+            setSuccess('Book submitted successfully.');
         } catch (err) {
             console.error("Error adding book:", err);
             setError(err.response?.data?.message || "Failed to add book. Please check the details.");
+        } finally {
+            addBookRequestInFlight.current = false;
+            setIsAddingBook(false);
         }
     };
 
@@ -860,7 +864,9 @@ const BookActionsPage = () => {
                                 </div>
                             )}
                         </div>
-                        <button type="submit" className="submit-button">Add Book</button>
+                        <button type="submit" className="submit-button" disabled={isAddingBook}>
+                            {isAddingBook ? 'Adding Book...' : 'Add Book'}
+                        </button>
                     </form>
                 </>
             )}
