@@ -68,10 +68,9 @@ public class TransactionsService {
 	private String generateNextTransactionId() {
 		// Find the highest number, default to 0 if no transactions exist, then add 1.
 		int nextNumber = transactionsRepository.findMaxTransactionNumber().orElse(0) + 1;
-		return String.format("TXN%03d", nextNumber);
+		return String.format("TXN%04d", nextNumber);
 	}
-
-	public SubscriptionStatusDTO getActiveSubscriptionForCustomer(String customerId) {
+tiveSubscriptionForCustomer(String customerId) {
 		List<Transactions> activeRows = getActiveSubscriptionRows(customerId, LocalDate.now());
 		if (activeRows.isEmpty()) {
 			SubscriptionStatusDTO dto = new SubscriptionStatusDTO();
