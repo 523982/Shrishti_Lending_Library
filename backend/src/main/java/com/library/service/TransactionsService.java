@@ -70,7 +70,8 @@ public class TransactionsService {
 		int nextNumber = transactionsRepository.findMaxTransactionNumber().orElse(0) + 1;
 		return String.format("TXN%04d", nextNumber);
 	}
-tiveSubscriptionForCustomer(String customerId) {
+
+	public SubscriptionStatusDTO getActiveSubscriptionForCustomer(String customerId) {
 		List<Transactions> activeRows = getActiveSubscriptionRows(customerId, LocalDate.now());
 		if (activeRows.isEmpty()) {
 			SubscriptionStatusDTO dto = new SubscriptionStatusDTO();
