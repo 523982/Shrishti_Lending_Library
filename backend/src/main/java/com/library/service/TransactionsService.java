@@ -27,6 +27,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.lang.String;
 
 @Service
 public class TransactionsService {
@@ -67,7 +68,7 @@ public class TransactionsService {
 	private String generateNextTransactionId() {
 		// Find the highest number, default to 0 if no transactions exist, then add 1.
 		int nextNumber = transactionsRepository.findMaxTransactionNumber().orElse(0) + 1;
-		return "TXN" + nextNumber;
+		return String.format("TXN%03d", nextNumber);
 	}
 
 	public SubscriptionStatusDTO getActiveSubscriptionForCustomer(String customerId) {
