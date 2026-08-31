@@ -1,23 +1,27 @@
-import React, { useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import apiClient from '../services/api';
 import './AdminForms.css';
 
+const getEmptyCustomer = () => ({
+    customerName: '',
+    blockNumber: '',
+    unitNumber: '',
+    mobileNumber: '',
+    communityId: '',
+});
+
 const AddCustomerPage = () => {
     // Updated state for all required fields
-    const [customerData, setCustomerData] = useState({
-        customerName: '',
-        blockNumber: '',
-        unitNumber: '',
-        mobileNumber: '',
-        communityId: '', // Will store the ID from the dropdown
-    });
+    const [customerData, setCustomerData] = useState(getEmptyCustomer());
     // State for the communities dropdown
     const [communities, setCommunities] = useState([]);
     const [loadingCommunities, setLoadingCommunities] = useState(true);
 
     const [error, setError] = useState(null);
     const [success, setSuccess] = useState(null);
+    const [isAddingCustomer, setIsAddingCustomer] = useState(false);
+    const addCustomerRequestInFlight = useRef(false);
     const navigate = useNavigate();
     const location = useLocation();
 
@@ -63,6 +67,10 @@ const AddCustomerPage = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (addCustomerRequestInFlight.current) {
+            return;
+        }
+
         setError(null);
         setSuccess(null);
 
@@ -72,6 +80,9 @@ const AddCustomerPage = () => {
             return;
         }
 
+        addCustomerRequestInFlight.current = true;
+        setIsAddingCustomer(true);
+
         try {
             // Ensure communityId is a number before sending
             const payload = {
@@ -80,8 +91,9 @@ const AddCustomerPage = () => {
             };
             const response = await apiClient.post('/customers', payload);
             const newCustomer = response.data;            
+            setCustomerData(getEmptyCustomer());
             
-            setSuccess('Customer added successfully! Redirecting...');
+            setSuccess('Customer added successfully.');
             //setTimeout(() => navigate('/'), 2000); // Redirect to dashboard
                     // If we were sent here from another page, navigate back with the new customer data
                     if (location.state?.from) {
@@ -90,11 +102,14 @@ const AddCustomerPage = () => {
                             replace: true // Avoids adding this page to history
                         });
                     } else {
-                        setTimeout(() => navigate('/'), 2000); // Default redirect to dashboard
+                        setSuccess('Customer added successfully.');
                     }
         } catch (err) {
             console.error("Error adding customer:", err);
             setError(err.response?.data?.message || "Failed to add customer. Please check the details.");
+        } finally {
+            addCustomerRequestInFlight.current = false;
+            setIsAddingCustomer(false);
         }
     };
 
@@ -174,7 +189,9 @@ const AddCustomerPage = () => {
                         </Link>
                     </div>
                 </div>
-                <button type="submit" className="submit-button" disabled={loadingCommunities}>Add Customer</button>
+                <button type="submit" className="submit-button" disabled={loadingCommunities || isAddingCustomer}>
+                    {isAddingCustomer ? 'Adding Customer...' : 'Add Customer'}
+                </button>
                 {success && <p className="success-message">{success}</p>}
                 {error && <p className="error-message">{error}</p>}
             </form>

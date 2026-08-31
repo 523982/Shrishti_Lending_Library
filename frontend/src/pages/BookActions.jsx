@@ -187,7 +187,15 @@ const BookActionsPage = () => {
     // State for the "Add Book" form
     const [bookData, setBookData] = useState(getInitialBookData());
     const [isAddingBook, setIsAddingBook] = useState(false);
+    const [isUpdatingBook, setIsUpdatingBook] = useState(false);
+    const [isDeletingBook, setIsDeletingBook] = useState(false);
+    const [isLendingBook, setIsLendingBook] = useState(false);
+    const [isReturningBook, setIsReturningBook] = useState(false);
     const addBookRequestInFlight = useRef(false);
+    const updateBookRequestInFlight = useRef(false);
+    const deleteBookRequestInFlight = useRef(false);
+    const lendBookRequestInFlight = useRef(false);
+    const returnBookRequestInFlight = useRef(false);
 
         // State for the "Modify Book" functionality
         const [currentAction, setCurrentAction] = useState('add');
@@ -251,6 +259,21 @@ const BookActionsPage = () => {
             ...prevData,
             [name]: value,
         }));
+    };
+
+    const handleViewBack = () => {
+        const returnTo = location.state?.returnTo;
+        if (returnTo?.pathname) {
+            navigate(returnTo.pathname, { state: returnTo.state || {} });
+            return;
+        }
+
+        if (window.history.length > 1 && location.key !== 'default') {
+            navigate(-1);
+            return;
+        }
+
+        navigate('/admin/books');
     };
 
     const handleBookImageChange = async (e, target) => {
@@ -555,6 +578,29 @@ const BookActionsPage = () => {
             setSearchQuery('');
             setSearchResults([]);
         };
+
+        const handleActionChange = (action) => {
+            setCurrentAction(action);
+            setError(null);
+            setSuccess(null);
+            setSearchError(null);
+            setReturnToLendAfterAdd(false);
+            handleClearSelection();
+            setReturnBookQuery('');
+            setReturnBookResults([]);
+            setSelectedReturnTransaction(null);
+            setReturnDetails({ returnDate: new Date().toISOString().split('T')[0], isSwap: false, amountPaid: '' });
+            setSelectedLendCustomer(null);
+            setLendCustomerQuery('');
+            setLendCustomerResults([]);
+            setActiveOffer(null);
+            setActiveSubscription(null);
+            setLendDetails(getInitialLendDetails());
+            if (action === 'add') {
+                setBookData(getInitialBookData());
+            }
+        };
+
         const handleSelectCustomer = (customer) => {
             setSelectedLendCustomer(customer);
             setLendCustomerQuery(customer.customerName);
@@ -563,6 +609,7 @@ const BookActionsPage = () => {
         useEffect(() => {
             if (location.state?.adminBookAction === 'lend' && location.state?.book) {
                 const bookForLend = location.state.book;
+                const nextState = location.state?.returnTo ? { returnTo: location.state.returnTo } : {};
 
                 setCurrentAction('lend');
                 setError(null);
@@ -570,22 +617,24 @@ const BookActionsPage = () => {
                 setSearchQuery(bookForLend.bookName || '');
                 setSearchResults([]);
                 setLendDetails(getInitialLendDetails());
-                navigate(location.pathname, { replace: true, state: {} });
+                navigate(location.pathname, { replace: true, state: nextState });
             }
 
             if (location.state?.adminBookAction === 'return' && location.state?.book) {
+                const nextState = location.state?.returnTo ? { returnTo: location.state.returnTo } : {};
                 setCurrentAction('return');
                 handleSelectReturnBook(location.state.book);
-                navigate(location.pathname, { replace: true, state: {} });
+                navigate(location.pathname, { replace: true, state: nextState });
             }
 
             if (location.state?.adminBookAction === 'view') {
+                const nextState = location.state?.returnTo ? { returnTo: location.state.returnTo } : {};
                 const bookId = location.state.bookId || location.state.book?.bookId;
                 setCurrentAction('view');
                 if (bookId) {
                     loadBookSummary(bookId);
                 }
-                navigate(location.pathname, { replace: true, state: {} });
+                navigate(location.pathname, { replace: true, state: nextState });
             }
         }, [location.state]);
 
@@ -638,6 +687,10 @@ const BookActionsPage = () => {
 
     const handleUpdate = async (e) => {
         e.preventDefault();
+        if (updateBookRequestInFlight.current) {
+            return;
+        }
+
         if (!selectedBook) {
             setError("No book selected to update.");
             return;
@@ -651,6 +704,9 @@ const BookActionsPage = () => {
                     return;
                 }
 
+        updateBookRequestInFlight.current = true;
+        setIsUpdatingBook(true);
+
         try {
             const payload = {
                 ...selectedBook,
@@ -659,17 +715,21 @@ const BookActionsPage = () => {
             };
             await apiClient.put(`/books/${selectedBook.bookId}`, payload);
             setSuccess('Book updated successfully!');
-            setTimeout(() => {
-                setSelectedBook(null);
-                setSearchQuery('');
-            }, 2000);
+            handleClearSelection();
         } catch (err) {
             console.error("Error updating book:", err);
             setError(err.response?.data?.message || "Failed to update book.");
+        } finally {
+            updateBookRequestInFlight.current = false;
+            setIsUpdatingBook(false);
         }
     };
 
     const handleDelete = async () => {
+        if (deleteBookRequestInFlight.current) {
+            return;
+        }
+
         if (!selectedBook) {
             setError("No book selected to delete.");
             return;
@@ -682,6 +742,8 @@ const BookActionsPage = () => {
 
         setError(null);
         setSuccess(null);
+        deleteBookRequestInFlight.current = true;
+        setIsDeletingBook(true);
 
         try {
             await apiClient.put(`/books/remove/${selectedBook.bookId}`);
@@ -690,10 +752,17 @@ const BookActionsPage = () => {
         } catch (err) {
             console.error("Error deleting book:", err);
             setError(err.response?.data?.message || "Failed to delete book.");
+        } finally {
+            deleteBookRequestInFlight.current = false;
+            setIsDeletingBook(false);
         }
     };
     const handleLendSubmit = async (e) => {
         e.preventDefault();
+        if (lendBookRequestInFlight.current) {
+            return;
+        }
+
         if (!selectedBook || !selectedLendCustomer) {
             setError("Please select both a book and a customer.");
             return;
@@ -713,6 +782,9 @@ const BookActionsPage = () => {
             ...lendDetails,
             offerMode: selectedOfferMode,
         };
+
+        lendBookRequestInFlight.current = true;
+        setIsLendingBook(true);
 
         try {
             const isSubscriptionMode = ['START_SUBSCRIPTION', 'USE_SUBSCRIPTION'].includes(selectedOfferMode);
@@ -749,11 +821,18 @@ const BookActionsPage = () => {
 
         } catch (err) {
             setError(err.response?.data?.message || "Failed to process transaction. Check API and payload.");
+        } finally {
+            lendBookRequestInFlight.current = false;
+            setIsLendingBook(false);
         }
     };
 
     const handleReturnSubmit = async (e) => {
         e.preventDefault();
+        if (returnBookRequestInFlight.current) {
+            return;
+        }
+
         if (!selectedReturnTransaction) {
             setError("Please select a book to return.");
             return;
@@ -765,6 +844,9 @@ const BookActionsPage = () => {
             setError("Payment collected cannot be more than the pending balance.");
             return;
         }
+
+        returnBookRequestInFlight.current = true;
+        setIsReturningBook(true);
 
         try {
             const payload = {
@@ -786,6 +868,9 @@ const BookActionsPage = () => {
         } catch (err) {
             console.error("Error returning book:", err);
             setError(err.response?.data?.message || "Failed to process return.");
+        } finally {
+            returnBookRequestInFlight.current = false;
+            setIsReturningBook(false);
         }
     };
 
@@ -804,12 +889,12 @@ const BookActionsPage = () => {
         <div className={`admin-form-container ${currentAction === 'view' ? 'summary-container' : ''}`}>
 
 <div className="action-tabs">
-                <button onClick={() => setCurrentAction('add')} className={currentAction === 'add' ? 'active' : ''}>Add Book</button>
-                <button onClick={() => setCurrentAction('modify')} className={currentAction === 'modify' ? 'active' : ''}>Modify Book</button>
-                <button onClick={() => setCurrentAction('delete')} className={currentAction === 'delete' ? 'active' : ''}>Delete Book</button>
-                <button onClick={() => setCurrentAction('lend')} className={currentAction === 'lend' ? 'active' : ''}>Lend Book</button>
-                <button onClick={() => setCurrentAction('return')} className={currentAction === 'return' ? 'active' : ''}>Return Book</button>
-                <button onClick={() => setCurrentAction('view')} className={currentAction === 'view' ? 'active' : ''}>View Book</button>
+                <button type="button" onClick={() => handleActionChange('add')} className={currentAction === 'add' ? 'active' : ''}>Add Book</button>
+                <button type="button" onClick={() => handleActionChange('modify')} className={currentAction === 'modify' ? 'active' : ''}>Modify Book</button>
+                <button type="button" onClick={() => handleActionChange('delete')} className={currentAction === 'delete' ? 'active' : ''}>Delete Book</button>
+                <button type="button" onClick={() => handleActionChange('lend')} className={currentAction === 'lend' ? 'active' : ''}>Lend Book</button>
+                <button type="button" onClick={() => handleActionChange('return')} className={currentAction === 'return' ? 'active' : ''}>Return Book</button>
+                <button type="button" onClick={() => handleActionChange('view')} className={currentAction === 'view' ? 'active' : ''}>View Book</button>
 
             </div>
             <Link to="/" className="back-link">&larr; Back to Dashboard</Link>
@@ -936,7 +1021,9 @@ const BookActionsPage = () => {
                                     </div>
                                 )}
                             </div>
-                            <button type="submit" className="submit-button">Update Book</button>
+                            <button type="submit" className="submit-button" disabled={isUpdatingBook}>
+                                {isUpdatingBook ? 'Updating Book...' : 'Update Book'}
+                            </button>
                         </form>
                     )}
                 </>
@@ -961,7 +1048,9 @@ const BookActionsPage = () => {
                             <h3>{selectedBook.bookName}</h3>
                             <p><strong>Author:</strong> {selectedBook.author}</p>
                             <p><strong>Genre:</strong> {selectedBook.genre}</p>
-                            <button onClick={handleDelete} className="submit-button delete-button">Delete This Book</button>
+                            <button type="button" onClick={handleDelete} className="submit-button delete-button" disabled={isDeletingBook}>
+                                {isDeletingBook ? 'Deleting Book...' : 'Delete This Book'}
+                            </button>
                         </div>
                     )}
                 </>
@@ -1161,9 +1250,9 @@ const BookActionsPage = () => {
                         <button
                             type="submit"
                             className="submit-button"
-                            disabled={!selectedBook || !selectedLendCustomer || loadingOfferContext || isLendBlockedBySubscription}
+                            disabled={!selectedBook || !selectedLendCustomer || loadingOfferContext || isLendBlockedBySubscription || isLendingBook}
                         >
-                            Lend Book
+                            {isLendingBook ? 'Lending Book...' : 'Lend Book'}
                         </button>
                     </form>
                 </>
@@ -1171,6 +1260,7 @@ const BookActionsPage = () => {
             {currentAction === 'view' && (
                 <>
                     <h1>View Book</h1>
+                    <button type="button" className="history-back-button" onClick={handleViewBack}>Back</button>
                     <div className="search-container">
                         <label htmlFor="searchQuery">Search for a Book to View</label>
                         <input
@@ -1294,7 +1384,9 @@ const BookActionsPage = () => {
                                         );
                                     })()}
                                 </fieldset>
-                                <button type="submit" className="submit-button">Process Return</button>
+                                <button type="submit" className="submit-button" disabled={isReturningBook}>
+                                    {isReturningBook ? 'Processing Return...' : 'Process Return'}
+                                </button>
                             </>
                         )}
                     </form>

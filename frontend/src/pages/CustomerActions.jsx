@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import React, { useEffect, useRef, useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import apiClient from '../services/api';
 import { CustomerSummaryView } from '../components/SummaryViews';
 import './AdminForms.css';
@@ -12,6 +12,8 @@ const emptyCustomer = {
     mobileNumber: '',
     communityId: '',
 };
+
+const getEmptyCustomer = () => ({ ...emptyCustomer });
 
 const getCustomerCommunityId = (customer) => (
     customer?.community?.communityId ||
@@ -37,7 +39,7 @@ const getApiErrorMessage = (err, fallback) => {
 
 const CustomerActionsPage = () => {
     const [currentAction, setCurrentAction] = useState('add');
-    const [customerData, setCustomerData] = useState(emptyCustomer);
+    const [customerData, setCustomerData] = useState(getEmptyCustomer());
     const [selectedCustomerId, setSelectedCustomerId] = useState(null);
     const [selectedCustomer, setSelectedCustomer] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
@@ -47,9 +49,31 @@ const CustomerActionsPage = () => {
     const [loadingCommunities, setLoadingCommunities] = useState(true);
     const [customerSummary, setCustomerSummary] = useState(null);
     const [loadingSummary, setLoadingSummary] = useState(false);
+    const [isAddingCustomer, setIsAddingCustomer] = useState(false);
+    const [isUpdatingCustomer, setIsUpdatingCustomer] = useState(false);
+    const [isDeletingCustomer, setIsDeletingCustomer] = useState(false);
     const [error, setError] = useState(null);
     const [success, setSuccess] = useState(null);
+    const addCustomerRequestInFlight = useRef(false);
+    const updateCustomerRequestInFlight = useRef(false);
+    const deleteCustomerRequestInFlight = useRef(false);
+    const navigate = useNavigate();
     const location = useLocation();
+
+    const handleViewBack = () => {
+        const returnTo = location.state?.returnTo;
+        if (returnTo?.pathname) {
+            navigate(returnTo.pathname, { state: returnTo.state || {} });
+            return;
+        }
+
+        if (window.history.length > 1 && location.key !== 'default') {
+            navigate(-1);
+            return;
+        }
+
+        navigate('/admin/customers');
+    };
 
     const loadCustomerSummary = async (customerId) => {
         if (!customerId) return;
@@ -145,7 +169,7 @@ const CustomerActionsPage = () => {
         setCustomerSummary(null);
         clearMessages();
         if (action === 'add') {
-            setCustomerData(emptyCustomer);
+            setCustomerData(getEmptyCustomer());
         }
     };
 
@@ -190,21 +214,35 @@ const CustomerActionsPage = () => {
 
     const handleAddSubmit = async (e) => {
         e.preventDefault();
+        if (addCustomerRequestInFlight.current) {
+            return;
+        }
+
         clearMessages();
         if (!validateCustomer()) return;
+
+        addCustomerRequestInFlight.current = true;
+        setIsAddingCustomer(true);
 
         try {
             await apiClient.post('/customers', buildPayload());
             setSuccess('Customer added successfully.');
-            setCustomerData(emptyCustomer);
+            setCustomerData(getEmptyCustomer());
         } catch (err) {
             console.error('Error adding customer:', err);
             setError(getApiErrorMessage(err, 'Failed to add customer.'));
+        } finally {
+            addCustomerRequestInFlight.current = false;
+            setIsAddingCustomer(false);
         }
     };
 
     const handleUpdateSubmit = async (e) => {
         e.preventDefault();
+        if (updateCustomerRequestInFlight.current) {
+            return;
+        }
+
         clearMessages();
         if (!selectedCustomerId) {
             setError('Please select a customer to modify.');
@@ -212,20 +250,31 @@ const CustomerActionsPage = () => {
         }
         if (!validateCustomer()) return;
 
+        updateCustomerRequestInFlight.current = true;
+        setIsUpdatingCustomer(true);
+
         try {
-            const response = await apiClient.put(`/customers/${selectedCustomerId}`, buildPayload());
-            const updatedCustomer = response.data;
-            setSelectedCustomer(updatedCustomer);
-            setCustomerData(toCustomerFormData(updatedCustomer));
-            setSearchQuery(updatedCustomer.customerName);
+            await apiClient.put(`/customers/${selectedCustomerId}`, buildPayload());
             setSuccess('Customer updated successfully.');
+            setSelectedCustomer(null);
+            setSelectedCustomerId(null);
+            setCustomerData(getEmptyCustomer());
+            setSearchQuery('');
+            setSearchResults([]);
         } catch (err) {
             console.error('Error updating customer:', err);
             setError(getApiErrorMessage(err, 'Failed to update customer.'));
+        } finally {
+            updateCustomerRequestInFlight.current = false;
+            setIsUpdatingCustomer(false);
         }
     };
 
     const handleDelete = async () => {
+        if (deleteCustomerRequestInFlight.current) {
+            return;
+        }
+
         clearMessages();
         if (!selectedCustomerId || !selectedCustomer) {
             setError('Please select a customer to delete.');
@@ -235,20 +284,26 @@ const CustomerActionsPage = () => {
             return;
         }
 
+        deleteCustomerRequestInFlight.current = true;
+        setIsDeletingCustomer(true);
+
         try {
             await apiClient.delete(`/customers/delete/${selectedCustomerId}`);
             setSuccess('Customer deleted successfully.');
             setSelectedCustomer(null);
             setSelectedCustomerId(null);
-            setCustomerData(emptyCustomer);
+            setCustomerData(getEmptyCustomer());
             setSearchQuery('');
         } catch (err) {
             console.error('Error deleting customer:', err);
             setError(getApiErrorMessage(err, 'Failed to delete customer.'));
+        } finally {
+            deleteCustomerRequestInFlight.current = false;
+            setIsDeletingCustomer(false);
         }
     };
 
-    const renderCustomerForm = (onSubmit, buttonText) => (
+    const renderCustomerForm = (onSubmit, buttonText, isSubmitting = false, submittingText = buttonText) => (
         <form onSubmit={onSubmit} className="admin-form">
             <div className="form-group">
                 <label htmlFor="customerName">Customer Name</label>
@@ -286,7 +341,9 @@ const CustomerActionsPage = () => {
                     </Link>
                 </div>
             </div>
-            <button type="submit" className="submit-button" disabled={loadingCommunities}>{buttonText}</button>
+            <button type="submit" className="submit-button" disabled={loadingCommunities || isSubmitting}>
+                {isSubmitting ? submittingText : buttonText}
+            </button>
         </form>
     );
 
@@ -334,7 +391,7 @@ const CustomerActionsPage = () => {
             {currentAction === 'add' && (
                 <>
                     <h1>Add a New Customer</h1>
-                    {renderCustomerForm(handleAddSubmit, 'Add Customer')}
+                    {renderCustomerForm(handleAddSubmit, 'Add Customer', isAddingCustomer, 'Adding Customer...')}
                 </>
             )}
 
@@ -342,7 +399,7 @@ const CustomerActionsPage = () => {
                 <>
                     <h1>Modify Customer Details</h1>
                     {renderCustomerSearch('Search for a Customer to Modify')}
-                    {selectedCustomer && renderCustomerForm(handleUpdateSubmit, 'Update Customer')}
+                    {selectedCustomer && renderCustomerForm(handleUpdateSubmit, 'Update Customer', isUpdatingCustomer, 'Updating Customer...')}
                 </>
             )}
 
@@ -357,7 +414,9 @@ const CustomerActionsPage = () => {
                             <p><strong>Unit:</strong> {selectedCustomer.unitNumber || 'N/A'}</p>
                             <p><strong>Mobile:</strong> {selectedCustomer.mobileNumber || 'N/A'}</p>
                             <p><strong>Community:</strong> {selectedCustomer.community?.communityName || selectedCustomer.communityId || 'N/A'}</p>
-                            <button type="button" onClick={handleDelete} className="submit-button delete-button">Delete This Customer</button>
+                            <button type="button" onClick={handleDelete} className="submit-button delete-button" disabled={isDeletingCustomer}>
+                                {isDeletingCustomer ? 'Deleting Customer...' : 'Delete This Customer'}
+                            </button>
                         </div>
                     )}
                 </>
@@ -366,6 +425,7 @@ const CustomerActionsPage = () => {
             {currentAction === 'view' && (
                 <>
                     <h1>View Customer</h1>
+                    <button type="button" className="history-back-button" onClick={handleViewBack}>Back</button>
                     {renderCustomerSearch('Search for a Customer to View')}
                     {loadingSummary && <p>Loading customer summary...</p>}
                     {!loadingSummary && customerSummary && <CustomerSummaryView summary={customerSummary} />}

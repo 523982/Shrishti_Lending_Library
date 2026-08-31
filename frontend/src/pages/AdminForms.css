@@ -99,6 +99,28 @@
     text-decoration: underline;
 }
 
+.history-back-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 38px;
+    margin: 0 0 1rem;
+    padding: 0.5rem 0.85rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #0056b3;
+    cursor: pointer;
+    font-size: 0.94rem;
+    font-weight: 700;
+}
+
+.history-back-button:hover,
+.history-back-button:focus-visible {
+    background: #eef6ff;
+    outline: none;
+}
+
 @keyframes fadeInUp {
     from {
         opacity: 0;

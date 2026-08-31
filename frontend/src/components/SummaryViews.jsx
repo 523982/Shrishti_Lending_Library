@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import './SummaryViews.css';
 
 const currency = new Intl.NumberFormat('en-IN', {
@@ -49,7 +49,15 @@ const SummaryMetrics = ({ items }) => (
     </div>
 );
 
-const TransactionTable = ({ rows = [], context, emptyMessage = 'No transactions found.' }) => (
+const buildReturnTarget = (pathname, state, previousReturnTo) => ({
+    pathname,
+    state: {
+        ...state,
+        ...(previousReturnTo ? { returnTo: previousReturnTo } : {}),
+    },
+});
+
+const TransactionTable = ({ rows = [], context, emptyMessage = 'No transactions found.', returnTarget }) => (
     <div className="summary-table-wrap">
         <table className="summary-table">
             <thead>
@@ -68,7 +76,7 @@ const TransactionTable = ({ rows = [], context, emptyMessage = 'No transactions 
                     <tr key={row.transactionId}>
                         <td data-label="Book">
                             {row.bookId ? (
-                                <Link to="/admin/books" state={{ adminBookAction: 'view', bookId: row.bookId }}>
+                                <Link to="/admin/books" state={{ adminBookAction: 'view', bookId: row.bookId, returnTo: returnTarget }}>
                                     {row.bookName || row.bookId}
                                 </Link>
                             ) : row.bookName || '-'}
@@ -77,7 +85,7 @@ const TransactionTable = ({ rows = [], context, emptyMessage = 'No transactions 
                         {context !== 'customer' && (
                             <td data-label="Customer">
                                 {row.customerId ? (
-                                    <Link to="/admin/customers" state={{ customerAction: 'view', customerId: row.customerId }}>
+                                    <Link to="/admin/customers" state={{ customerAction: 'view', customerId: row.customerId, returnTo: returnTarget }}>
                                         {row.customerName || row.customerId}
                                     </Link>
                                 ) : row.customerName || '-'}
@@ -105,8 +113,14 @@ const TransactionTable = ({ rows = [], context, emptyMessage = 'No transactions 
 );
 
 export const CustomerSummaryView = ({ summary }) => {
+    const location = useLocation();
     if (!summary) return null;
     const subscription = summary.activeSubscription;
+    const returnTarget = buildReturnTarget(
+        '/admin/customers',
+        { customerAction: 'view', customerId: summary.customerId },
+        location.state?.returnTo,
+    );
 
     return (
         <div className="summary-view">
@@ -119,7 +133,7 @@ export const CustomerSummaryView = ({ summary }) => {
                     </p>
                 </div>
                 {summary.communityId && (
-                    <Link to="/admin/add-community" state={{ communityAction: 'view', communityId: summary.communityId }}>
+                    <Link to="/admin/add-community" state={{ communityAction: 'view', communityId: summary.communityId, returnTo: returnTarget }}>
                         {summary.communityName || 'View Community'}
                     </Link>
                 )}
@@ -147,20 +161,26 @@ export const CustomerSummaryView = ({ summary }) => {
 
             <section className="summary-panel">
                 <h3>Books With Customer</h3>
-                <TransactionTable rows={summary.activeBooks} context="customer" emptyMessage="No active books with this customer." />
+                <TransactionTable rows={summary.activeBooks} context="customer" emptyMessage="No active books with this customer." returnTarget={returnTarget} />
             </section>
 
             <section className="summary-panel">
                 <h3>Customer History</h3>
-                <TransactionTable rows={summary.history} context="customer" />
+                <TransactionTable rows={summary.history} context="customer" returnTarget={returnTarget} />
             </section>
         </div>
     );
 };
 
 export const BookSummaryView = ({ summary }) => {
+    const location = useLocation();
     if (!summary) return null;
     const fallbackInitial = String(summary.bookName || 'B').trim().charAt(0).toUpperCase() || 'B';
+    const returnTarget = buildReturnTarget(
+        '/admin/books',
+        { adminBookAction: 'view', bookId: summary.bookId },
+        location.state?.returnTo,
+    );
 
     return (
         <div className="summary-view">
@@ -192,7 +212,7 @@ export const BookSummaryView = ({ summary }) => {
                 <section className="summary-panel">
                     <h3>Currently Lent To</h3>
                     <p>
-                        <Link to="/admin/customers" state={{ customerAction: 'view', customerId: summary.activeTransaction.customerId }}>
+                        <Link to="/admin/customers" state={{ customerAction: 'view', customerId: summary.activeTransaction.customerId, returnTo: returnTarget }}>
                             {summary.activeTransaction.customerName}
                         </Link>
                     </p>
@@ -205,14 +225,20 @@ export const BookSummaryView = ({ summary }) => {
 
             <section className="summary-panel">
                 <h3>Book Lending History</h3>
-                <TransactionTable rows={summary.history} context="book" />
+                <TransactionTable rows={summary.history} context="book" returnTarget={returnTarget} />
             </section>
         </div>
     );
 };
 
 export const CommunitySummaryView = ({ summary }) => {
+    const location = useLocation();
     if (!summary) return null;
+    const returnTarget = buildReturnTarget(
+        '/admin/add-community',
+        { communityAction: 'view', communityId: summary.communityId },
+        location.state?.returnTo,
+    );
 
     return (
         <div className="summary-view">
@@ -242,12 +268,12 @@ export const CommunitySummaryView = ({ summary }) => {
 
             <section className="summary-panel">
                 <h3>Currently Lent In Community</h3>
-                <TransactionTable rows={summary.activeBooks} context="community" emptyMessage="No active books in this community." />
+                <TransactionTable rows={summary.activeBooks} context="community" emptyMessage="No active books in this community." returnTarget={returnTarget} />
             </section>
 
             <section className="summary-panel">
                 <h3>Community History</h3>
-                <TransactionTable rows={summary.history} context="community" />
+                <TransactionTable rows={summary.history} context="community" returnTarget={returnTarget} />
             </section>
         </div>
     );

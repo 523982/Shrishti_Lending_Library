@@ -1,25 +1,44 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import apiClient from '../services/api';
 import { CommunitySummaryView } from '../components/SummaryViews';
 import './AdminForms.css';
 import './BookActions.css';
 
+const getEmptyCommunity = () => ({
+    communityName: '',
+    description: '',
+});
+
 const AddCommunityPage = () => {
     const [currentAction, setCurrentAction] = useState('add');
-    const [communityData, setCommunityData] = useState({
-        communityName: '',
-        description: '',
-    });
+    const [communityData, setCommunityData] = useState(getEmptyCommunity());
     const [communities, setCommunities] = useState([]);
     const [selectedCommunityId, setSelectedCommunityId] = useState('');
     const [communitySummary, setCommunitySummary] = useState(null);
     const [loadingCommunities, setLoadingCommunities] = useState(false);
     const [loadingSummary, setLoadingSummary] = useState(false);
+    const [isAddingCommunity, setIsAddingCommunity] = useState(false);
     const [error, setError] = useState(null);
     const [success, setSuccess] = useState(null);
+    const addCommunityRequestInFlight = useRef(false);
     const navigate = useNavigate();
     const location = useLocation();
+
+    const handleViewBack = () => {
+        const returnTo = location.state?.returnTo;
+        if (returnTo?.pathname) {
+            navigate(returnTo.pathname, { state: returnTo.state || {} });
+            return;
+        }
+
+        if (window.history.length > 1 && location.key !== 'default') {
+            navigate(-1);
+            return;
+        }
+
+        navigate('/admin/add-community');
+    };
 
     const fetchCommunities = async () => {
         try {
@@ -72,14 +91,20 @@ const AddCommunityPage = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (addCommunityRequestInFlight.current) {
+            return;
+        }
+
         setError(null);
         setSuccess(null);
+        addCommunityRequestInFlight.current = true;
+        setIsAddingCommunity(true);
 
         try {
          // We need the response to get the ID of the new community
             const response = await apiClient.post('/communities', communityData);
             setSuccess('Community added successfully.');
-            setCommunityData({ communityName: '', description: '' });
+            setCommunityData(getEmptyCommunity());
             await fetchCommunities();
              // If we were sent here from another page, navigate back to it immediately.
              if (location.state?.from) {
@@ -90,12 +115,16 @@ const AddCommunityPage = () => {
                     }
                 });
             } else {
-                setCurrentAction('view');
-                loadCommunitySummary(response.data.communityId);
+                setCurrentAction('add');
+                setSelectedCommunityId('');
+                setCommunitySummary(null);
             }
         } catch (err) {
             console.error("Error adding community:", err);
             setError(err.response?.data?.message || "Failed to add community. Please check the details.");
+        } finally {
+            addCommunityRequestInFlight.current = false;
+            setIsAddingCommunity(false);
         }
     };
 
@@ -106,6 +135,7 @@ const AddCommunityPage = () => {
         if (action === 'add') {
             setCommunitySummary(null);
             setSelectedCommunityId('');
+            setCommunityData(getEmptyCommunity());
         }
     };
 
@@ -150,7 +180,9 @@ const AddCommunityPage = () => {
                                 rows="4"
                             />
                         </div>
-                        <button type="submit" className="submit-button">Add Community</button>
+                        <button type="submit" className="submit-button" disabled={isAddingCommunity}>
+                            {isAddingCommunity ? 'Adding Community...' : 'Add Community'}
+                        </button>
                     </form>
                 </>
             )}
@@ -158,6 +190,7 @@ const AddCommunityPage = () => {
             {currentAction === 'view' && (
                 <>
                     <h1>View Community</h1>
+                    <button type="button" className="history-back-button" onClick={handleViewBack}>Back</button>
                     <div className="admin-form">
                         <div className="form-group">
                             <label htmlFor="communitySelect">Select Community</label>
