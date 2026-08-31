@@ -45,6 +45,7 @@ const getTransactionDate = (transaction) => transaction.returnDate || transactio
 const sortByAmount = (items, key = 'amount') => [...items].sort((a, b) => b[key] - a[key]);
 
 const chartColors = ['#2563eb', '#16a34a', '#f59e0b', '#db2777', '#64748b'];
+const REPORT_PREVIEW_LIMIT = 10;
 
 const formatDate = (value) => {
     if (!value) return '-';
@@ -307,6 +308,12 @@ const Reports = () => {
         communities: { key: 'billed', direction: 'desc' },
         dues: { key: 'pending', direction: 'desc' },
         transactions: { key: 'transactionDate', direction: 'desc' },
+    });
+    const [expandedTables, setExpandedTables] = useState({
+        books: false,
+        communities: false,
+        dues: false,
+        transactions: false,
     });
     const [customRange, setCustomRange] = useState({
         from: monthStartInput(),
@@ -572,6 +579,34 @@ const Reports = () => {
         downloadCsv(`${name}-${fileSuffix}.csv`, columns, rows);
     };
 
+    const getVisibleRows = (tableName, rows) => (
+        expandedTables[tableName] ? rows : rows.slice(0, REPORT_PREVIEW_LIMIT)
+    );
+
+    const toggleExpanded = (tableName) => {
+        setExpandedTables(prev => ({
+            ...prev,
+            [tableName]: !prev[tableName],
+        }));
+    };
+
+    const renderTableActions = (tableName, totalRows, onExport) => (
+        <div className="panel-actions">
+            {totalRows > REPORT_PREVIEW_LIMIT && (
+                <button
+                    type="button"
+                    className="view-toggle-button"
+                    onClick={() => toggleExpanded(tableName)}
+                >
+                    {expandedTables[tableName] ? 'Show 10' : `View All (${totalRows})`}
+                </button>
+            )}
+            <button type="button" className="export-button" onClick={onExport}>
+                Export
+            </button>
+        </div>
+    );
+
     if (loading) {
         return <div className="reports-page"><h1>Reports</h1><p>Loading reports...</p></div>;
     }
@@ -638,7 +673,7 @@ const Reports = () => {
                     <strong>{report.totals.collectionRate.toFixed(0)}%</strong>
                 </div>
                 <div className="metric-card">
-                    <span>Book Cost Used</span>
+                    <span>Total Invested</span>
                     <strong>{currency.format(report.totals.transactedBookCost)}</strong>
                 </div>
                 <div className="metric-card">
@@ -683,13 +718,15 @@ const Reports = () => {
             <section className="report-panel">
                 <div className="panel-heading">
                     <h2>Book Performance</h2>
-                    <button type="button" className="export-button" onClick={() => exportTable('book-performance', bookColumns, sortedBookPerformance)}>
-                        Export
-                    </button>
+                    {renderTableActions(
+                        'books',
+                        sortedBookPerformance.length,
+                        () => exportTable('book-performance', bookColumns, sortedBookPerformance),
+                    )}
                 </div>
                 <ReportTable
                     columns={bookColumns}
-                    rows={sortedBookPerformance}
+                    rows={getVisibleRows('books', sortedBookPerformance)}
                     sortConfig={sortConfig.books}
                     onSort={(key) => handleSort('books', key)}
                     emptyMessage="No book performance data for this period."
@@ -699,13 +736,15 @@ const Reports = () => {
             <section className="report-panel">
                 <div className="panel-heading">
                     <h2>Community Performance</h2>
-                    <button type="button" className="export-button" onClick={() => exportTable('community-performance', communityColumns, sortedCommunityPerformance)}>
-                        Export
-                    </button>
+                    {renderTableActions(
+                        'communities',
+                        sortedCommunityPerformance.length,
+                        () => exportTable('community-performance', communityColumns, sortedCommunityPerformance),
+                    )}
                 </div>
                 <ReportTable
                     columns={communityColumns}
-                    rows={sortedCommunityPerformance}
+                    rows={getVisibleRows('communities', sortedCommunityPerformance)}
                     sortConfig={sortConfig.communities}
                     onSort={(key) => handleSort('communities', key)}
                     emptyMessage="No community performance data for this period."
@@ -715,13 +754,15 @@ const Reports = () => {
             <section className="report-panel">
                 <div className="panel-heading">
                     <h2>Pending Dues</h2>
-                    <button type="button" className="export-button" onClick={() => exportTable('pending-dues', duesColumns, sortedDuesRows)}>
-                        Export
-                    </button>
+                    {renderTableActions(
+                        'dues',
+                        sortedDuesRows.length,
+                        () => exportTable('pending-dues', duesColumns, sortedDuesRows),
+                    )}
                 </div>
                 <ReportTable
                     columns={duesColumns}
-                    rows={sortedDuesRows}
+                    rows={getVisibleRows('dues', sortedDuesRows)}
                     sortConfig={sortConfig.dues}
                     onSort={(key) => handleSort('dues', key)}
                     emptyMessage="No pending dues for this period."
@@ -731,13 +772,15 @@ const Reports = () => {
             <section className="report-panel">
                 <div className="panel-heading">
                     <h2>Transaction Details</h2>
-                    <button type="button" className="export-button" onClick={() => exportTable('transaction-details', transactionColumns, sortedTransactionRows)}>
-                        Export
-                    </button>
+                    {renderTableActions(
+                        'transactions',
+                        sortedTransactionRows.length,
+                        () => exportTable('transaction-details', transactionColumns, sortedTransactionRows),
+                    )}
                 </div>
                 <ReportTable
                     columns={transactionColumns}
-                    rows={sortedTransactionRows}
+                    rows={getVisibleRows('transactions', sortedTransactionRows)}
                     sortConfig={sortConfig.transactions}
                     onSort={(key) => handleSort('transactions', key)}
                     emptyMessage="No transactions for this period."
