@@ -27,6 +27,14 @@
     gap: 0.75rem;
 }
 
+.report-actions {
+    align-items: flex-end;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    justify-content: flex-end;
+}
+
 .period-controls select,
 .period-controls input {
     min-height: 42px;
@@ -36,6 +44,23 @@
     background-color: #fff;
     color: #202833;
     font-size: 0.95rem;
+}
+
+.export-button {
+    min-height: 42px;
+    border: 1px solid #0f62bd;
+    border-radius: 6px;
+    padding: 0 0.9rem;
+    background-color: #fff;
+    color: #0f62bd;
+    cursor: pointer;
+    font-size: 0.95rem;
+    font-weight: 700;
+}
+
+.export-button:hover,
+.export-button:focus-visible {
+    background-color: #eef6ff;
 }
 
 .metric-grid {
@@ -71,6 +96,133 @@
     font-size: 1.55rem;
 }
 
+.chart-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(220px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.chart-card {
+    background-color: #fff;
+    border: 1px solid #dde3ea;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(33, 45, 62, 0.06);
+    min-width: 0;
+    padding: 1rem;
+}
+
+.chart-card h2,
+.panel-heading h2 {
+    margin: 0;
+    font-size: 1.05rem;
+}
+
+.donut-row {
+    align-items: center;
+    display: grid;
+    gap: 0.9rem;
+    grid-template-columns: 104px 1fr;
+    margin-top: 1rem;
+}
+
+.donut-chart {
+    align-items: center;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    position: relative;
+}
+
+.donut-chart::after {
+    background-color: #fff;
+    border-radius: 50%;
+    content: "";
+    height: 62%;
+    position: absolute;
+    width: 62%;
+}
+
+.donut-chart span {
+    color: #17202c;
+    font-size: 0.78rem;
+    font-weight: 800;
+    max-width: 58px;
+    overflow: hidden;
+    position: relative;
+    text-align: center;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    z-index: 1;
+}
+
+.chart-legend {
+    display: grid;
+    gap: 0.55rem;
+    min-width: 0;
+}
+
+.chart-legend div {
+    align-items: center;
+    display: grid;
+    gap: 0.45rem;
+    grid-template-columns: 10px minmax(0, 1fr) auto;
+}
+
+.chart-legend i {
+    border-radius: 50%;
+    height: 10px;
+    width: 10px;
+}
+
+.chart-legend span,
+.bar-label span {
+    color: #556171;
+    font-size: 0.86rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.chart-legend strong,
+.bar-label strong {
+    color: #17202c;
+    font-size: 0.86rem;
+}
+
+.bar-list {
+    display: grid;
+    gap: 0.75rem;
+    margin-top: 1rem;
+}
+
+.bar-row {
+    display: grid;
+    gap: 0.35rem;
+}
+
+.bar-label {
+    align-items: center;
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.bar-track {
+    background-color: #e8edf3;
+    border-radius: 999px;
+    height: 9px;
+    overflow: hidden;
+}
+
+.bar-track span {
+    background: linear-gradient(90deg, #2563eb, #14b8a6);
+    border-radius: inherit;
+    display: block;
+    height: 100%;
+}
+
 .reports-split {
     display: grid;
     grid-template-columns: minmax(260px, 0.8fr) minmax(360px, 1.2fr);
@@ -86,6 +238,14 @@
 .report-panel h2 {
     margin: 0 0 1rem;
     font-size: 1.15rem;
+}
+
+.panel-heading {
+    align-items: center;
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+    margin-bottom: 1rem;
 }
 
 .health-grid {
@@ -130,6 +290,34 @@
     text-transform: uppercase;
 }
 
+.sort-header {
+    align-items: center;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    display: flex;
+    font: inherit;
+    gap: 0.45rem;
+    justify-content: space-between;
+    letter-spacing: inherit;
+    padding: 0;
+    text-align: left;
+    text-transform: inherit;
+    width: 100%;
+}
+
+.sort-header span:last-child {
+    color: #0f62bd;
+    font-size: 0.72rem;
+    font-weight: 800;
+    text-transform: none;
+}
+
+.sort-header:not(.active) span:last-child {
+    opacity: 0.58;
+}
+
 .report-panel tbody tr:hover {
     background-color: #fbfcfe;
 }
@@ -156,8 +344,21 @@
         flex-direction: column;
     }
 
+    .report-actions {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
     .reports-split {
         grid-template-columns: 1fr;
+    }
+
+    .chart-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .donut-row {
+        grid-template-columns: 92px 1fr;
     }
 
     .health-grid {

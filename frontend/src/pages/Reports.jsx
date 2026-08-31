@@ -44,8 +44,270 @@ const getTransactionDate = (transaction) => transaction.returnDate || transactio
 
 const sortByAmount = (items, key = 'amount') => [...items].sort((a, b) => b[key] - a[key]);
 
+const chartColors = ['#2563eb', '#16a34a', '#f59e0b', '#db2777', '#64748b'];
+
+const formatDate = (value) => {
+    if (!value) return '-';
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString();
+};
+
+const getOfferLabel = (transaction) => {
+    if (transaction.subscriptionTxnId) {
+        return `Subscription ${transaction.bundleBookNo || '-'} / ${transaction.bundleBookLimit || '-'}`;
+    }
+    if (transaction.offerName) {
+        return transaction.offerName;
+    }
+    return 'Normal';
+};
+
+const compareValues = (a, b, type = 'text') => {
+    if (type === 'number') {
+        return toNumber(a) - toNumber(b);
+    }
+
+    if (type === 'date') {
+        const aTime = a ? new Date(a).getTime() : 0;
+        const bTime = b ? new Date(b).getTime() : 0;
+        return (Number.isNaN(aTime) ? 0 : aTime) - (Number.isNaN(bTime) ? 0 : bTime);
+    }
+
+    return String(a || '').localeCompare(String(b || ''), undefined, {
+        numeric: true,
+        sensitivity: 'base',
+    });
+};
+
+const sortRows = (rows, columns, sortConfig) => {
+    const column = columns.find(item => item.key === sortConfig.key);
+    if (!column) return rows;
+
+    const direction = sortConfig.direction === 'asc' ? 1 : -1;
+    return [...rows].sort((a, b) => {
+        const aValue = column.sortValue ? column.sortValue(a) : a[column.key];
+        const bValue = column.sortValue ? column.sortValue(b) : b[column.key];
+        return compareValues(aValue, bValue, column.type) * direction;
+    });
+};
+
+const nextSortConfig = (current, key) => {
+    if (current.key === key) {
+        return {
+            key,
+            direction: current.direction === 'asc' ? 'desc' : 'asc',
+        };
+    }
+
+    return { key, direction: 'asc' };
+};
+
+const escapeCsvValue = (value) => {
+    if (value === null || value === undefined) return '';
+    const text = String(value).replace(/\r?\n|\r/g, ' ');
+    return /[",]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+};
+
+const downloadCsv = (fileName, columns, rows) => {
+    const csvRows = [
+        columns.map(column => escapeCsvValue(column.label)).join(','),
+        ...rows.map(row => columns.map(column => {
+            const value = column.exportValue
+                ? column.exportValue(row)
+                : column.sortValue
+                    ? column.sortValue(row)
+                    : row[column.key];
+            return escapeCsvValue(value);
+        }).join(',')),
+    ];
+
+    const blob = new Blob([csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+};
+
+const SortHeader = ({ column, sortConfig, onSort }) => {
+    const isActive = sortConfig.key === column.key;
+    const directionLabel = isActive && sortConfig.direction === 'asc' ? 'Asc' : 'Desc';
+
+    return (
+        <th>
+            <button
+                type="button"
+                className={`sort-header${isActive ? ' active' : ''}`}
+                onClick={() => onSort(column.key)}
+            >
+                <span>{column.label}</span>
+                <span aria-hidden="true">{isActive ? directionLabel : 'Sort'}</span>
+            </button>
+        </th>
+    );
+};
+
+const ReportTable = ({ columns, rows, sortConfig, onSort, emptyMessage }) => (
+    <div className="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    {columns.map(column => (
+                        <SortHeader
+                            key={column.key}
+                            column={column}
+                            sortConfig={sortConfig}
+                            onSort={onSort}
+                        />
+                    ))}
+                </tr>
+            </thead>
+            <tbody>
+                {rows.map(row => (
+                    <tr key={row.id || row.transactionId || row.bookId || row.communityId}>
+                        {columns.map(column => (
+                            <td key={column.key} data-label={column.label}>
+                                {column.render ? column.render(row) : row[column.key]}
+                            </td>
+                        ))}
+                    </tr>
+                ))}
+                {rows.length === 0 && (
+                    <tr>
+                        <td colSpan={columns.length}>{emptyMessage}</td>
+                    </tr>
+                )}
+            </tbody>
+        </table>
+    </div>
+);
+
+const DonutChart = ({ title, data, formatter = value => value }) => {
+    const total = data.reduce((sum, item) => sum + toNumber(item.value), 0);
+    let current = 0;
+    const gradient = total > 0
+        ? data.map((item, index) => {
+            const start = current;
+            const end = current + ((toNumber(item.value) / total) * 100);
+            current = end;
+            return `${item.color || chartColors[index % chartColors.length]} ${start}% ${end}%`;
+        }).join(', ')
+        : '#e5e7eb 0% 100%';
+
+    return (
+        <div className="chart-card">
+            <h2>{title}</h2>
+            <div className="donut-row">
+                <div className="donut-chart" style={{ background: `conic-gradient(${gradient})` }}>
+                    <span>{total > 0 ? formatter(total) : '-'}</span>
+                </div>
+                <div className="chart-legend">
+                    {data.map((item, index) => (
+                        <div key={item.label}>
+                            <i style={{ backgroundColor: item.color || chartColors[index % chartColors.length] }} />
+                            <span>{item.label}</span>
+                            <strong>{formatter(item.value)}</strong>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const BarChart = ({ title, rows, labelKey, valueKey, formatter = value => value }) => {
+    const maxValue = Math.max(...rows.map(row => toNumber(row[valueKey])), 0);
+
+    return (
+        <div className="chart-card">
+            <h2>{title}</h2>
+            <div className="bar-list">
+                {rows.length === 0 && <p>No data for this period.</p>}
+                {rows.map(row => {
+                    const value = toNumber(row[valueKey]);
+                    const width = maxValue > 0 ? `${Math.max(6, (value / maxValue) * 100)}%` : '0%';
+                    return (
+                        <div className="bar-row" key={row.id || row.bookId || row.communityId}>
+                            <div className="bar-label">
+                                <span>{row[labelKey]}</span>
+                                <strong>{formatter(value)}</strong>
+                            </div>
+                            <div className="bar-track">
+                                <span style={{ width }} />
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
+    );
+};
+
+const bookColumns = [
+    {
+        key: 'bookName',
+        label: 'Book',
+        type: 'text',
+        sortValue: row => row.bookName,
+        exportValue: row => row.bookName,
+        render: row => (
+            <>
+                <strong>{row.bookName}</strong>
+                {row.author && <span className="table-subtext">by {row.author}</span>}
+            </>
+        ),
+    },
+    { key: 'timesLent', label: 'Lent', type: 'number' },
+    { key: 'lastTransactionDate', label: 'Last Date', type: 'date', render: row => formatDate(row.lastTransactionDate) },
+    { key: 'billed', label: 'Billed', type: 'number', render: row => currency.format(row.billed) },
+    { key: 'collected', label: 'Collected', type: 'number', render: row => currency.format(row.collected) },
+    { key: 'pending', label: 'Pending', type: 'number', render: row => currency.format(row.pending) },
+    { key: 'purchasePrice', label: 'Cost', type: 'number', render: row => currency.format(row.purchasePrice) },
+    { key: 'roi', label: 'Profit', type: 'number', render: row => currency.format(row.roi) },
+];
+
+const communityColumns = [
+    { key: 'communityName', label: 'Community', type: 'text' },
+    { key: 'transactions', label: 'Txns', type: 'number' },
+    { key: 'activeCustomerCount', label: 'Customers', type: 'number' },
+    { key: 'lastTransactionDate', label: 'Last Date', type: 'date', render: row => formatDate(row.lastTransactionDate) },
+    { key: 'billed', label: 'Billed', type: 'number', render: row => currency.format(row.billed) },
+    { key: 'collected', label: 'Collected', type: 'number', render: row => currency.format(row.collected) },
+    { key: 'pending', label: 'Pending', type: 'number', render: row => currency.format(row.pending) },
+];
+
+const duesColumns = [
+    { key: 'customerName', label: 'Customer', type: 'text' },
+    { key: 'bookName', label: 'Book', type: 'text' },
+    { key: 'pickupDate', label: 'Pickup', type: 'date', render: row => formatDate(row.pickupDate) },
+    { key: 'billed', label: 'Billed', type: 'number', render: row => currency.format(row.billed) },
+    { key: 'paid', label: 'Paid', type: 'number', render: row => currency.format(row.paid) },
+    { key: 'pending', label: 'Due', type: 'number', render: row => currency.format(row.pending) },
+];
+
+const transactionColumns = [
+    { key: 'transactionDate', label: 'Date', type: 'date', render: row => formatDate(row.transactionDate) },
+    { key: 'customerName', label: 'Customer', type: 'text' },
+    { key: 'bookName', label: 'Book', type: 'text' },
+    { key: 'communityName', label: 'Community', type: 'text' },
+    { key: 'billed', label: 'Billed', type: 'number', render: row => currency.format(row.billed) },
+    { key: 'paid', label: 'Paid', type: 'number', render: row => currency.format(row.paid) },
+    { key: 'pending', label: 'Due', type: 'number', render: row => currency.format(row.pending) },
+    { key: 'status', label: 'Status', type: 'text' },
+    { key: 'offerLabel', label: 'Offer / Sub', type: 'text' },
+];
+
 const Reports = () => {
     const [periodMode, setPeriodMode] = useState('all');
+    const [sortConfig, setSortConfig] = useState({
+        books: { key: 'billed', direction: 'desc' },
+        communities: { key: 'billed', direction: 'desc' },
+        dues: { key: 'pending', direction: 'desc' },
+        transactions: { key: 'transactionDate', direction: 'desc' },
+    });
     const [customRange, setCustomRange] = useState({
         from: monthStartInput(),
         to: todayInput(),
@@ -135,6 +397,13 @@ const Reports = () => {
             acc.transactions += 1;
             if (transaction.returnDate) acc.returned += 1;
             if (!transaction.returnDate) acc.active += 1;
+            if (transaction.subscriptionTxnId) {
+                acc.subscription += 1;
+            } else if (transaction.offerId) {
+                acc.offer += 1;
+            } else {
+                acc.normal += 1;
+            }
 
             return acc;
         }, {
@@ -144,6 +413,9 @@ const Reports = () => {
             transactions: 0,
             returned: 0,
             active: 0,
+            normal: 0,
+            offer: 0,
+            subscription: 0,
         });
 
         const uniqueBookIds = [...new Set(filteredTransactions.map(transaction => transaction.bookId).filter(Boolean))];
@@ -155,11 +427,13 @@ const Reports = () => {
         const bookMap = new Map();
         const communityMap = new Map();
         const duesRows = [];
+        const transactionRows = [];
 
         filteredTransactions.forEach(transaction => {
             const totalAmount = toNumber(transaction.totalAmount);
             const amountPaid = toNumber(transaction.amountPaid);
             const pending = Math.max(0, totalAmount - amountPaid);
+            const transactionDate = getTransactionDate(transaction);
             const isSubscription = Boolean(transaction.subscriptionTxnId);
             const bookRevenueAmount = transaction.bookRevenueAmount == null
                 ? totalAmount
@@ -176,6 +450,7 @@ const Reports = () => {
                     collected: 0,
                     pending: 0,
                     purchasePrice: toNumber(book?.purchasePrice),
+                    lastTransactionDate: '',
                 });
             }
 
@@ -184,6 +459,9 @@ const Reports = () => {
             bookRow.billed += bookRevenueAmount;
             bookRow.collected += isSubscription ? bookRevenueAmount : amountPaid;
             bookRow.pending += isSubscription ? 0 : pending;
+            if (!bookRow.lastTransactionDate || compareValues(transactionDate, bookRow.lastTransactionDate, 'date') > 0) {
+                bookRow.lastTransactionDate = transactionDate;
+            }
 
             const customer = customerById[transaction.customerId];
             const community = customer?.community || communityById[customer?.communityId];
@@ -198,6 +476,7 @@ const Reports = () => {
                     collected: 0,
                     pending: 0,
                     activeCustomers: new Set(),
+                    lastTransactionDate: '',
                 });
             }
 
@@ -207,6 +486,22 @@ const Reports = () => {
             communityRow.collected += amountPaid;
             communityRow.pending += pending;
             if (transaction.customerId) communityRow.activeCustomers.add(transaction.customerId);
+            if (!communityRow.lastTransactionDate || compareValues(transactionDate, communityRow.lastTransactionDate, 'date') > 0) {
+                communityRow.lastTransactionDate = transactionDate;
+            }
+
+            transactionRows.push({
+                transactionId: transaction.transactionId,
+                transactionDate,
+                customerName: transaction.customerName || customer?.customerName || transaction.customerId || '-',
+                bookName: transaction.bookName || book?.bookName || transaction.bookId || '-',
+                communityName: community?.communityName || 'Unknown Community',
+                billed: totalAmount,
+                paid: amountPaid,
+                pending,
+                status: transaction.returnDate ? 'Returned' : 'Active',
+                offerLabel: getOfferLabel(transaction),
+            });
 
             if (pending > 0) {
                 duesRows.push({
@@ -241,8 +536,41 @@ const Reports = () => {
             bookPerformance,
             communityPerformance,
             duesRows: sortByAmount(duesRows, 'pending'),
+            transactionRows,
         };
     }, [booksById, communities, customers, periodMode, selectedRange, transactions]);
+
+    const sortedBookPerformance = useMemo(
+        () => sortRows(report.bookPerformance, bookColumns, sortConfig.books),
+        [report.bookPerformance, sortConfig.books],
+    );
+    const sortedCommunityPerformance = useMemo(
+        () => sortRows(report.communityPerformance, communityColumns, sortConfig.communities),
+        [report.communityPerformance, sortConfig.communities],
+    );
+    const sortedDuesRows = useMemo(
+        () => sortRows(report.duesRows, duesColumns, sortConfig.dues),
+        [report.duesRows, sortConfig.dues],
+    );
+    const sortedTransactionRows = useMemo(
+        () => sortRows(report.transactionRows, transactionColumns, sortConfig.transactions),
+        [report.transactionRows, sortConfig.transactions],
+    );
+
+    const handleSort = (tableName, key) => {
+        setSortConfig(prev => ({
+            ...prev,
+            [tableName]: nextSortConfig(prev[tableName], key),
+        }));
+    };
+
+    const fileSuffix = periodMode === 'all'
+        ? 'all-time'
+        : `${selectedRange.from || 'start'}-to-${selectedRange.to || 'today'}`;
+
+    const exportTable = (name, columns, rows) => {
+        downloadCsv(`${name}-${fileSuffix}.csv`, columns, rows);
+    };
 
     if (loading) {
         return <div className="reports-page"><h1>Reports</h1><p>Loading reports...</p></div>;
@@ -259,27 +587,36 @@ const Reports = () => {
                     <h1>Reports</h1>
                     <p>Business view based on lending transactions and payments captured so far.</p>
                 </div>
-                <div className="period-controls">
-                    <select value={periodMode} onChange={(event) => setPeriodMode(event.target.value)}>
-                        <option value="all">All Time</option>
-                        <option value="thisMonth">This Month</option>
-                        <option value="lastMonth">Last Month</option>
-                        <option value="custom">Custom</option>
-                    </select>
-                    {periodMode === 'custom' && (
-                        <>
-                            <input
-                                type="date"
-                                value={customRange.from}
-                                onChange={(event) => setCustomRange(prev => ({ ...prev, from: event.target.value }))}
-                            />
-                            <input
-                                type="date"
-                                value={customRange.to}
-                                onChange={(event) => setCustomRange(prev => ({ ...prev, to: event.target.value }))}
-                            />
-                        </>
-                    )}
+                <div className="report-actions">
+                    <div className="period-controls">
+                        <select value={periodMode} onChange={(event) => setPeriodMode(event.target.value)}>
+                            <option value="all">All Time</option>
+                            <option value="thisMonth">This Month</option>
+                            <option value="lastMonth">Last Month</option>
+                            <option value="custom">Custom</option>
+                        </select>
+                        {periodMode === 'custom' && (
+                            <>
+                                <input
+                                    type="date"
+                                    value={customRange.from}
+                                    onChange={(event) => setCustomRange(prev => ({ ...prev, from: event.target.value }))}
+                                />
+                                <input
+                                    type="date"
+                                    value={customRange.to}
+                                    onChange={(event) => setCustomRange(prev => ({ ...prev, to: event.target.value }))}
+                                />
+                            </>
+                        )}
+                    </div>
+                    <button
+                        type="button"
+                        className="export-button"
+                        onClick={() => exportTable('transactions', transactionColumns, sortedTransactionRows)}
+                    >
+                        Export Transactions
+                    </button>
                 </div>
             </div>
 
@@ -310,118 +647,101 @@ const Reports = () => {
                 </div>
             </section>
 
-            <section className="reports-split">
-                <div className="report-panel">
-                    <h2>Library Health</h2>
-                    <div className="health-grid">
-                        <div>
-                            <span>Transactions</span>
-                            <strong>{report.totals.transactions}</strong>
-                        </div>
-                        <div>
-                            <span>Returned</span>
-                            <strong>{report.totals.returned}</strong>
-                        </div>
-                        <div>
-                            <span>Active Loans</span>
-                            <strong>{report.totals.active}</strong>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="report-panel">
-                    <h2>Top Communities</h2>
-                    <div className="table-wrap">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Community</th>
-                                    <th>Txns</th>
-                                    <th>Billed</th>
-                                    <th>Pending</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {report.communityPerformance.slice(0, 5).map(community => (
-                                    <tr key={community.communityId}>
-                                        <td>{community.communityName}</td>
-                                        <td>{community.transactions}</td>
-                                        <td>{currency.format(community.billed)}</td>
-                                        <td>{currency.format(community.pending)}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+            <section className="chart-grid">
+                <DonutChart
+                    title="Collections"
+                    data={[
+                        { label: 'Collected', value: report.totals.collected, color: '#16a34a' },
+                        { label: 'Pending', value: report.totals.pending, color: '#f59e0b' },
+                    ]}
+                    formatter={value => currency.format(value)}
+                />
+                <DonutChart
+                    title="Loan Status"
+                    data={[
+                        { label: 'Active', value: report.totals.active, color: '#2563eb' },
+                        { label: 'Returned', value: report.totals.returned, color: '#14b8a6' },
+                    ]}
+                />
+                <DonutChart
+                    title="Lending Type"
+                    data={[
+                        { label: 'Normal', value: report.totals.normal, color: '#64748b' },
+                        { label: 'Offer', value: report.totals.offer, color: '#db2777' },
+                        { label: 'Subscription', value: report.totals.subscription, color: '#f59e0b' },
+                    ]}
+                />
+                <BarChart
+                    title="Top Books by Revenue"
+                    rows={sortByAmount(report.bookPerformance, 'billed').slice(0, 5)}
+                    labelKey="bookName"
+                    valueKey="billed"
+                    formatter={value => currency.format(value)}
+                />
             </section>
 
             <section className="report-panel">
-                <h2>Book Performance</h2>
-                <div className="table-wrap">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Book</th>
-                                <th>Lent</th>
-                                <th>Billed</th>
-                                <th>Collected</th>
-                                <th>Pending</th>
-                                <th>ROI</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {report.bookPerformance.slice(0, 10).map(book => (
-                                <tr key={book.bookId}>
-                                    <td>
-                                        <strong>{book.bookName}</strong>
-                                        {book.author && <span className="table-subtext">by {book.author}</span>}
-                                    </td>
-                                    <td>{book.timesLent}</td>
-                                    <td>{currency.format(book.billed)}</td>
-                                    <td>{currency.format(book.collected)}</td>
-                                    <td>{currency.format(book.pending)}</td>
-                                    <td>{currency.format(book.roi)}</td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                <div className="panel-heading">
+                    <h2>Book Performance</h2>
+                    <button type="button" className="export-button" onClick={() => exportTable('book-performance', bookColumns, sortedBookPerformance)}>
+                        Export
+                    </button>
                 </div>
+                <ReportTable
+                    columns={bookColumns}
+                    rows={sortedBookPerformance}
+                    sortConfig={sortConfig.books}
+                    onSort={(key) => handleSort('books', key)}
+                    emptyMessage="No book performance data for this period."
+                />
             </section>
 
             <section className="report-panel">
-                <h2>Pending Dues</h2>
-                <div className="table-wrap">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Customer</th>
-                                <th>Book</th>
-                                <th>Pickup</th>
-                                <th>Billed</th>
-                                <th>Paid</th>
-                                <th>Due</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {report.duesRows.slice(0, 10).map(row => (
-                                <tr key={row.transactionId}>
-                                    <td>{row.customerName}</td>
-                                    <td>{row.bookName}</td>
-                                    <td>{row.pickupDate ? new Date(row.pickupDate).toLocaleDateString() : '-'}</td>
-                                    <td>{currency.format(row.billed)}</td>
-                                    <td>{currency.format(row.paid)}</td>
-                                    <td>{currency.format(row.pending)}</td>
-                                </tr>
-                            ))}
-                            {report.duesRows.length === 0 && (
-                                <tr>
-                                    <td colSpan="6">No pending dues for this period.</td>
-                                </tr>
-                            )}
-                        </tbody>
-                    </table>
+                <div className="panel-heading">
+                    <h2>Community Performance</h2>
+                    <button type="button" className="export-button" onClick={() => exportTable('community-performance', communityColumns, sortedCommunityPerformance)}>
+                        Export
+                    </button>
                 </div>
+                <ReportTable
+                    columns={communityColumns}
+                    rows={sortedCommunityPerformance}
+                    sortConfig={sortConfig.communities}
+                    onSort={(key) => handleSort('communities', key)}
+                    emptyMessage="No community performance data for this period."
+                />
+            </section>
+
+            <section className="report-panel">
+                <div className="panel-heading">
+                    <h2>Pending Dues</h2>
+                    <button type="button" className="export-button" onClick={() => exportTable('pending-dues', duesColumns, sortedDuesRows)}>
+                        Export
+                    </button>
+                </div>
+                <ReportTable
+                    columns={duesColumns}
+                    rows={sortedDuesRows}
+                    sortConfig={sortConfig.dues}
+                    onSort={(key) => handleSort('dues', key)}
+                    emptyMessage="No pending dues for this period."
+                />
+            </section>
+
+            <section className="report-panel">
+                <div className="panel-heading">
+                    <h2>Transaction Details</h2>
+                    <button type="button" className="export-button" onClick={() => exportTable('transaction-details', transactionColumns, sortedTransactionRows)}>
+                        Export
+                    </button>
+                </div>
+                <ReportTable
+                    columns={transactionColumns}
+                    rows={sortedTransactionRows}
+                    sortConfig={sortConfig.transactions}
+                    onSort={(key) => handleSort('transactions', key)}
+                    emptyMessage="No transactions for this period."
+                />
             </section>
         </div>
     );
