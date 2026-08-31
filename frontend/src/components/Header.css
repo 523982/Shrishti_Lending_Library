@@ -1,179 +1,306 @@
-/* Base styles for the header */
 .app-header {
-    display: flex;
-    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 1200;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
     align-items: center;
     gap: 1rem;
-    padding: 1rem 2rem;
-    background-color: #1a1a1a; /* Dark background for the "appearing from dark" effect */
+    padding: 0.85rem 1.4rem;
+    background-color: #1a1a1a;
     color: white;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.22);
+}
+
+.app-header .logo {
+    min-width: 0;
 }
 
 .app-header .logo a {
+    display: block;
     color: white;
     text-decoration: none;
-    font-size: 1.5rem;
-    font-weight: bold;
+    font-size: 1.45rem;
+    font-weight: 800;
     line-height: 1.2;
-}
-
-.app-header nav {
-    display: flex;
-    align-items: center;
-    gap: 25px;
-    flex-wrap: wrap;
-    min-width: 0;
-}
-
-.app-header nav a {
-    color: #a0deff; /* A visible light blue color */
-    text-decoration: none;
-    font-size: 1.1rem;
-    transition: color 0.3s ease;
+    overflow: hidden;
+    text-overflow: ellipsis;
     white-space: nowrap;
 }
 
-.app-header nav a:hover,
-.app-header nav a.active {
+.sidebar-toggle,
+.sidebar-close {
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+}
+
+.sidebar-toggle {
+    width: 42px;
+    height: 42px;
+    display: grid;
+    place-items: center;
+    border-radius: 6px;
     color: white;
+    transition: background-color 0.2s ease;
 }
 
-/* Animation to fade elements in from the top */
-@keyframes fadeInFromTop {
-    from {
-        opacity: 0;
-        transform: translateY(-15px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+.sidebar-toggle:hover,
+.sidebar-toggle:focus-visible {
+    background-color: rgba(255, 255, 255, 0.12);
+    outline: none;
 }
 
-/* Set initial state and apply animations with delays */
-.app-header .logo,
-.app-header nav a,
-.auth-button {
-    opacity: 0; /* Start invisible */
-    animation-name: fadeInFromTop;
-    animation-duration: 0.7s;
-    animation-timing-function: ease-out;
-    animation-fill-mode: forwards; /* This is key: it keeps the element visible after animating */
+.sidebar-toggle-icon {
+    width: 12px;
+    height: 12px;
+    border-right: 3px solid currentColor;
+    border-bottom: 3px solid currentColor;
+    transform: rotate(-45deg);
+    transition: transform 0.2s ease;
 }
 
-.app-header .logo { animation-delay: 0.3s; }
-.app-header nav a:nth-of-type(1) { animation-delay: 0.8s; }
-.app-header nav a:nth-of-type(2) { animation-delay: 1.1s; }
-.auth-button { animation-delay: 1.4s; }
-
-/* Styles for the right side of the header */
-.header-right {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 30px;
-    min-width: 0;
+.sidebar-toggle.open .sidebar-toggle-icon {
+    transform: rotate(135deg);
 }
 
 .auth-section {
     display: flex;
     align-items: center;
-    gap: 12px;
-    flex-shrink: 0;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    min-width: 0;
 }
 
 .auth-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 40px;
+    padding: 0.55rem 0.9rem;
+    border: none;
+    border-radius: 6px;
     background-color: #007bff;
     color: white;
-    border: none;
-    padding: 10px 15px;
-    border-radius: 5px;
     cursor: pointer;
-    font-size: 0.9rem;
-    font-weight: 600;
+    font-size: 0.92rem;
+    font-weight: 700;
     text-decoration: none;
-    transition: background-color 0.3s ease;
+    white-space: nowrap;
+    transition: background-color 0.2s ease;
 }
 
-.auth-button:hover {
+.auth-button:hover,
+.auth-button:focus-visible {
     background-color: #0056b3;
+    outline: none;
 }
 
 .admin-user {
-    font-size: 0.9rem;
-    font-weight: 600;
+    max-width: 180px;
     color: #f8f9fa;
+    font-size: 0.9rem;
+    font-weight: 700;
+    overflow: hidden;
+    text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+.sidebar-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 1250;
+    border: 0;
+    background: rgba(15, 23, 42, 0.42);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+}
+
+.sidebar-backdrop.open {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.app-sidebar {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 1300;
+    width: 300px;
+    max-width: 86vw;
+    display: flex;
+    flex-direction: column;
+    background: #ffffff;
+    color: #17202c;
+    box-shadow: 12px 0 32px rgba(15, 23, 42, 0.22);
+    transform: translateX(-104%);
+    transition: transform 0.22s ease;
+}
+
+.app-sidebar.open {
+    transform: translateX(0);
+}
+
+.sidebar-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1.15rem;
+    border-bottom: 1px solid #e6ebf0;
+    background: #f8fafc;
+}
+
+.sidebar-eyebrow {
+    display: block;
+    color: #66717f;
+    font-size: 0.74rem;
+    font-weight: 800;
+    letter-spacing: 0;
+    text-transform: uppercase;
+}
+
+.sidebar-header h2 {
+    margin: 0.2rem 0 0;
+    color: #17202c;
+    font-size: 1.15rem;
+    line-height: 1.2;
+}
+
+.sidebar-close {
+    width: 36px;
+    height: 36px;
+    display: grid;
+    place-items: center;
+    flex: 0 0 auto;
+    border-radius: 6px;
+    color: #344054;
+}
+
+.sidebar-close:hover,
+.sidebar-close:focus-visible {
+    background: #e9eef5;
+    outline: none;
+}
+
+.sidebar-close-icon {
+    position: relative;
+    width: 18px;
+    height: 18px;
+}
+
+.sidebar-close-icon::before,
+.sidebar-close-icon::after {
+    content: '';
+    position: absolute;
+    top: 8px;
+    left: 1px;
+    width: 16px;
+    height: 2px;
+    border-radius: 999px;
+    background: currentColor;
+}
+
+.sidebar-close-icon::before {
+    transform: rotate(45deg);
+}
+
+.sidebar-close-icon::after {
+    transform: rotate(-45deg);
+}
+
+.sidebar-nav {
+    display: grid;
+    gap: 0.25rem;
+    padding: 0.8rem;
+    overflow-y: auto;
+}
+
+.sidebar-nav a {
+    display: flex;
+    align-items: center;
+    min-height: 46px;
+    padding: 0.7rem 0.85rem;
+    border-radius: 6px;
+    color: #253244;
+    font-size: 0.98rem;
+    font-weight: 750;
+    text-decoration: none;
+}
+
+.sidebar-nav a:hover,
+.sidebar-nav a:focus-visible {
+    background: #eef6ff;
+    color: #0056b3;
+    outline: none;
+}
+
+.sidebar-nav a.active {
+    background: #0d6efd;
+    color: #ffffff;
 }
 
 @media (max-width: 760px) {
     .app-header {
-        align-items: stretch;
-        flex-direction: column;
-        padding: 0.9rem 1rem;
+        gap: 0.65rem;
+        padding: 0.75rem 0.8rem;
     }
 
     .app-header .logo a {
-        display: block;
-        font-size: 1.4rem;
+        font-size: 1.1rem;
     }
 
-    .header-right {
-        align-items: center;
-        justify-content: space-between;
-        gap: 0.75rem;
-        width: 100%;
-    }
-
-    .app-header nav {
-        gap: 0.75rem;
-        min-width: 0;
-        overflow-x: auto;
-        flex-wrap: nowrap;
-        padding-bottom: 0.15rem;
-        scrollbar-width: thin;
-    }
-
-    .app-header nav a {
-        font-size: 1rem;
+    .sidebar-toggle {
+        width: 40px;
+        height: 40px;
     }
 
     .auth-section {
-        margin-left: auto;
+        gap: 0.45rem;
     }
 
     .auth-button {
-        min-height: 42px;
-        padding: 9px 14px;
+        min-height: 38px;
+        padding: 0.5rem 0.7rem;
+        font-size: 0.86rem;
+    }
+
+    .admin-user {
+        display: none;
+    }
+
+    .app-sidebar {
+        width: 82vw;
+        max-width: 320px;
+    }
+
+    .sidebar-header {
+        padding: 1rem;
+    }
+
+    .sidebar-nav {
+        padding: 0.7rem;
+    }
+
+    .sidebar-nav a {
+        min-height: 50px;
+        font-size: 1rem;
     }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 380px) {
     .app-header {
-        gap: 0.85rem;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        gap: 0.5rem;
     }
 
-    .header-right {
-        align-items: stretch;
-        flex-direction: column;
+    .app-header .logo a {
+        font-size: 1rem;
     }
 
-    .app-header nav {
-        width: 100%;
-        order: 2;
-    }
-
-    .app-header nav a {
-        line-height: 1.2;
-        flex: 0 0 auto;
-        padding: 0.25rem 0;
-    }
-
-    .auth-section {
-        justify-content: flex-start;
-        margin-left: 0;
-        order: 1;
+    .auth-button {
+        padding: 0.5rem 0.6rem;
     }
 }
-
