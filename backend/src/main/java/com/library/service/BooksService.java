@@ -15,6 +15,7 @@ import com.library.model.BookStatus;
 import com.library.model.Books;
 import com.library.repository.BooksRepository;
 import com.library.repository.BooksStatusRepository;
+import com.library.repository.TransactionsRepository;
 
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
@@ -25,12 +26,15 @@ public class BooksService {
 	    private final BooksRepository booksRepository;
 	    
 	    private final BooksStatusRepository booksStatusRepository;
+
+	    private final TransactionsRepository transactionsRepository;
 	    
 	    @Autowired
-	    public BooksService(BooksRepository booksRepository,BooksStatusRepository booksStatusRepository) {
+	    public BooksService(BooksRepository booksRepository,BooksStatusRepository booksStatusRepository, TransactionsRepository transactionsRepository) {
 			super();
 			this.booksRepository = booksRepository;
 			this.booksStatusRepository=booksStatusRepository;
+			this.transactionsRepository = transactionsRepository;
 		}
 	    
 
@@ -67,8 +71,11 @@ public class BooksService {
 	                .orElseThrow(() -> new ResourceNotFoundException("Book not found with id: " + bookId));
 	    }
 	    
-	    public List<Books> searchBooks(String query) {
-	        return booksRepository.findByBookNameContainingIgnoreCase(query);
+	    public List<Books> searchBooks(String query, boolean includeObsolete) {
+	        if (includeObsolete) {
+	        	return booksRepository.findByBookNameContainingIgnoreCase(query);
+	        }
+	        return booksRepository.searchByBookNameExcludingStatus(query, 6L);
 	    }
 	    
 	    public List<Books> searchLentBooks(String query) {
@@ -97,16 +104,12 @@ public class BooksService {
 	        return booksRepository.save(existingBook);
 	    }
 	    
-	    public void deleteBookById(Long bookId) {
-	    	 if (!booksRepository.existsById(bookId)) {
-	    	        throw new EntityNotFoundException("Book not found with id: " + bookId);
-	    	    }
-	    	booksRepository.deleteById(bookId);
-	    }
-	    
 	    public BooksDTO removeBook(Long bookId) {
 	    	 Books book= booksRepository.findById(bookId)
 	    			 .orElseThrow(() -> new EntityNotFoundException("Book not found with id: " + bookId));; 
+	    	 if (transactionsRepository.existsByBooksBookIdAndReturnDateIsNull(bookId)) {
+	    	 	throw new IllegalStateException("Book is currently lent. Return it before marking obsolete.");
+	    	 }
 	    	 //BooksDTO request= convertToDto(getBooksById(bookId));
 	    	 BookStatus status= getOrCreateBookStatus(6L, BookStatusEnum.OBSOLETE);
 	    	 book.setBookStatus(status);
