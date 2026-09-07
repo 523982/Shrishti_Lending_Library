@@ -69,8 +69,10 @@ public class BooksController {
     }
     
     @GetMapping("/search")
-    public ResponseEntity<List<Books>> searchBooks(@RequestParam("q") String query) {
-        List<Books> books = booksService.searchBooks(query);
+    public ResponseEntity<List<Books>> searchBooks(
+            @RequestParam("q") String query,
+            @RequestParam(value = "includeObsolete", defaultValue = "false") boolean includeObsolete) {
+        List<Books> books = booksService.searchBooks(query, includeObsolete);
         return ResponseEntity.ok(books);
     }
     
@@ -94,7 +96,7 @@ public class BooksController {
     
     @DeleteMapping("/delete/{id}")
     public ResponseEntity<Void> deleteBookById(@PathVariable("id") Long bookId){
-    	booksService.deleteBookById(bookId);
+    	booksService.removeBook(bookId);
         return ResponseEntity.noContent().build();
 
     }
