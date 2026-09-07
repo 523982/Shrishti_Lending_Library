@@ -40,6 +40,8 @@ import org.springframework.stereotype.Repository;
 
 		List<Transactions> findByBooksBookIdOrderByPickupDateDescTransactionIdDesc(Long bookId);
 
+		boolean existsByBooksBookIdAndReturnDateIsNull(Long bookId);
+
 		List<Transactions> findByCustomersCommunityCommunityIdOrderByPickupDateDescTransactionIdDesc(Long communityId);
 	}
 

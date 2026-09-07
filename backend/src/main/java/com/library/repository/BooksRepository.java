@@ -27,6 +27,9 @@ public interface BooksRepository extends JpaRepository<Books, Long> {
 	@Query("SELECT b FROM Books b WHERE b.bookStatus IS NULL OR b.bookStatus.statusId <> :statusId")
 	List<Books> findByStatusIdNot(@Param("statusId") Long statusId);
 	
+	@Query("SELECT b FROM Books b WHERE LOWER(b.bookName) LIKE LOWER(CONCAT('%', :query, '%')) AND (b.bookStatus IS NULL OR b.bookStatus.statusId <> :statusId)")
+	List<Books> searchByBookNameExcludingStatus(@Param("query") String query, @Param("statusId") Long statusId);
+	
 	List<Books> findByBookNameContainingIgnoreCase(String query);
 }
 
