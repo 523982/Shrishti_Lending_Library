@@ -2,8 +2,23 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import apiClient from '../services/api';
 import { CustomerSummaryView } from '../components/SummaryViews';
+import ManagementActionMenu from '../components/ManagementActionMenu';
 import './AdminForms.css';
 import './BookActions.css';
+
+const currency = new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    maximumFractionDigits: 0,
+});
+
+const customerActionItems = [
+    { key: 'add', label: 'Add Customer' },
+    { key: 'modify', label: 'Modify Customer' },
+    { key: 'delete', label: 'Delete Customer' },
+    { key: 'payment', label: 'Collect Payment' },
+    { key: 'view', label: 'View Customer' },
+];
 
 const emptyCustomer = {
     customerName: '',
@@ -19,6 +34,21 @@ const getCustomerCommunityId = (customer) => (
     customer?.community?.communityId ||
     customer?.communityId ||
     ''
+);
+
+const toNumber = (value) => Number(value) || 0;
+
+const formatDate = (value) => {
+    if (!value) return '-';
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString();
+};
+
+const isActivePaymentRow = (transaction) => Boolean(transaction?.active || !transaction?.returnDate);
+
+const getPendingAmount = (transaction) => Math.max(
+    0,
+    toNumber(transaction?.pendingAmount ?? (toNumber(transaction?.totalAmount) - toNumber(transaction?.amountPaid))),
 );
 
 const toCustomerFormData = (customer) => ({
@@ -52,6 +82,8 @@ const CustomerActionsPage = () => {
     const [isAddingCustomer, setIsAddingCustomer] = useState(false);
     const [isUpdatingCustomer, setIsUpdatingCustomer] = useState(false);
     const [isDeletingCustomer, setIsDeletingCustomer] = useState(false);
+    const [paymentAmounts, setPaymentAmounts] = useState({});
+    const [collectingTransactionId, setCollectingTransactionId] = useState(null);
     const [error, setError] = useState(null);
     const [success, setSuccess] = useState(null);
     const addCustomerRequestInFlight = useRef(false);
@@ -95,8 +127,8 @@ const CustomerActionsPage = () => {
     };
 
     useEffect(() => {
-        if (location.state?.customerAction === 'view' && location.state?.customerId) {
-            setCurrentAction('view');
+        if (['view', 'payment'].includes(location.state?.customerAction) && location.state?.customerId) {
+            setCurrentAction(location.state.customerAction);
             loadCustomerSummary(location.state.customerId);
             return;
         }
@@ -128,7 +160,7 @@ const CustomerActionsPage = () => {
     }, []);
 
     useEffect(() => {
-        if (!['modify', 'delete', 'view'].includes(currentAction) || searchQuery.trim() === '') {
+        if (!['modify', 'delete', 'view', 'payment'].includes(currentAction) || searchQuery.trim() === '') {
             setSearchResults([]);
             return;
         }
@@ -167,6 +199,8 @@ const CustomerActionsPage = () => {
         setSearchQuery('');
         setSearchResults([]);
         setCustomerSummary(null);
+        setPaymentAmounts({});
+        setCollectingTransactionId(null);
         clearMessages();
         if (action === 'add') {
             setCustomerData(getEmptyCustomer());
@@ -185,7 +219,7 @@ const CustomerActionsPage = () => {
         setSearchQuery(customer.customerName);
         setSearchResults([]);
         clearMessages();
-        if (currentAction === 'view') {
+        if (['view', 'payment'].includes(currentAction)) {
             loadCustomerSummary(customer.customerId);
         }
     };
@@ -303,6 +337,63 @@ const CustomerActionsPage = () => {
         }
     };
 
+    const pendingPaymentRows = (() => {
+        const activeRows = (customerSummary?.activeBooks || [])
+            .filter(row => !row.subscriptionTxnId);
+        const returnedPendingRows = (customerSummary?.history || [])
+            .filter(row => !isActivePaymentRow(row) && !row.subscriptionTxnId && getPendingAmount(row) > 0);
+        const rowsByTransactionId = new Map();
+
+        [...activeRows, ...returnedPendingRows].forEach(row => {
+            rowsByTransactionId.set(row.transactionId, row);
+        });
+
+        return [...rowsByTransactionId.values()];
+    })();
+
+    const handlePaymentAmountChange = (transactionId, value) => {
+        setPaymentAmounts(prev => ({
+            ...prev,
+            [transactionId]: value,
+        }));
+    };
+
+    const handleCollectPayment = async (transaction) => {
+        clearMessages();
+        const paymentValue = Number(paymentAmounts[transaction.transactionId]);
+        const pendingAmount = getPendingAmount(transaction);
+        const isActiveTransaction = isActivePaymentRow(transaction);
+
+        if (!paymentValue || paymentValue <= 0) {
+            setError('Please enter a payment amount greater than zero.');
+            return;
+        }
+
+        if (!isActiveTransaction && paymentValue > pendingAmount) {
+            setError('Payment amount cannot be more than the pending balance.');
+            return;
+        }
+
+        setCollectingTransactionId(transaction.transactionId);
+        try {
+            await apiClient.put(`/transactions/${transaction.transactionId}/payment`, {
+                amountPaid: paymentValue,
+            });
+            setSuccess('Payment collected successfully.');
+            setPaymentAmounts(prev => {
+                const next = { ...prev };
+                delete next[transaction.transactionId];
+                return next;
+            });
+            await loadCustomerSummary(selectedCustomerId);
+        } catch (err) {
+            console.error('Error collecting payment:', err);
+            setError(getApiErrorMessage(err, 'Failed to collect payment.'));
+        } finally {
+            setCollectingTransactionId(null);
+        }
+    };
+
     const renderCustomerForm = (onSubmit, buttonText, isSubmitting = false, submittingText = buttonText) => (
         <form onSubmit={onSubmit} className="admin-form">
             <div className="form-group">
@@ -379,13 +470,13 @@ const CustomerActionsPage = () => {
     );
 
     return (
-        <div className={`admin-form-container ${currentAction === 'view' ? 'summary-container' : ''}`}>
-            <div className="action-tabs">
-                <button type="button" onClick={() => handleActionChange('add')} className={currentAction === 'add' ? 'active' : ''}>Add Customer</button>
-                <button type="button" onClick={() => handleActionChange('modify')} className={currentAction === 'modify' ? 'active' : ''}>Modify Customer</button>
-                <button type="button" onClick={() => handleActionChange('delete')} className={currentAction === 'delete' ? 'active' : ''}>Delete Customer</button>
-                <button type="button" onClick={() => handleActionChange('view')} className={currentAction === 'view' ? 'active' : ''}>View Customer</button>
-            </div>
+        <div className={`admin-form-container ${['view', 'payment'].includes(currentAction) ? 'summary-container' : ''}`}>
+            <ManagementActionMenu
+                title="Customer Management"
+                actions={customerActionItems}
+                currentAction={currentAction}
+                onActionChange={handleActionChange}
+            />
             <Link to="/" className="back-link">&larr; Back to Dashboard</Link>
 
             {currentAction === 'add' && (
@@ -429,6 +520,84 @@ const CustomerActionsPage = () => {
                     {renderCustomerSearch('Search for a Customer to View')}
                     {loadingSummary && <p>Loading customer summary...</p>}
                     {!loadingSummary && customerSummary && <CustomerSummaryView summary={customerSummary} />}
+                </>
+            )}
+
+            {currentAction === 'payment' && (
+                <>
+                    <h1>Collect Pending Payment</h1>
+                    {renderCustomerSearch('Search for a Customer to Collect Payment')}
+                    {loadingSummary && <p>Loading pending payments...</p>}
+                    {!loadingSummary && selectedCustomer && customerSummary && (
+                        <div className="payment-collection-panel">
+                            <h2>{customerSummary.customerName}</h2>
+                            {pendingPaymentRows.length === 0 ? (
+                                <p>No pending payment or active normal loan for this customer.</p>
+                            ) : (
+                                <div className="payment-table-wrap">
+                                    <table className="payment-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Book</th>
+                                                <th>Pickup</th>
+                                                <th>Return</th>
+                                                <th>Billed</th>
+                                                <th>Paid</th>
+                                                <th>Pending</th>
+                                                <th>Collect</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {pendingPaymentRows.map(transaction => {
+                                                const pendingAmount = getPendingAmount(transaction);
+                                                const isActiveTransaction = isActivePaymentRow(transaction);
+                                                const isCollecting = collectingTransactionId === transaction.transactionId;
+
+                                                return (
+                                                    <tr key={transaction.transactionId}>
+                                                        <td data-label="Book">{transaction.bookName || '-'}</td>
+                                                        <td data-label="Pickup">{formatDate(transaction.pickupDate)}</td>
+                                                        <td data-label="Return">{formatDate(transaction.returnDate)}</td>
+                                                        <td data-label="Billed">{currency.format(transaction.totalAmount)}</td>
+                                                        <td data-label="Paid">{currency.format(transaction.amountPaid)}</td>
+                                                        <td data-label="Pending">
+                                                            <strong>{isActiveTransaction ? 'Active loan' : currency.format(pendingAmount)}</strong>
+                                                            {isActiveTransaction && (
+                                                                <span className="table-subtext">
+                                                                    Paid till now {currency.format(transaction.amountPaid)}
+                                                                </span>
+                                                            )}
+                                                        </td>
+                                                        <td data-label="Collect">
+                                                            <div className="payment-entry">
+                                                                <input
+                                                                    type="number"
+                                                                    min="0"
+                                                                    max={isActiveTransaction ? undefined : pendingAmount}
+                                                                    step="0.01"
+                                                                    placeholder={isActiveTransaction ? 'Advance amount' : String(pendingAmount)}
+                                                                    value={paymentAmounts[transaction.transactionId] || ''}
+                                                                    onChange={(event) => handlePaymentAmountChange(transaction.transactionId, event.target.value)}
+                                                                />
+                                                                <button
+                                                                    type="button"
+                                                                    className="submit-button payment-submit-button"
+                                                                    disabled={isCollecting}
+                                                                    onClick={() => handleCollectPayment(transaction)}
+                                                                >
+                                                                    {isCollecting ? 'Saving...' : isActiveTransaction ? 'Add' : 'Save'}
+                                                                </button>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </>
             )}
 

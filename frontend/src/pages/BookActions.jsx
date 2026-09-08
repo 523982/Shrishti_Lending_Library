@@ -2,6 +2,7 @@ import React, { useRef, useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import apiClient from '../services/api';
 import { BookSummaryView } from '../components/SummaryViews';
+import ManagementActionMenu from '../components/ManagementActionMenu';
 import './AdminForms.css';
 import './BookActions.css'; // We'll create this for new styles
 
@@ -52,9 +53,9 @@ const calculateReturnSummary = (transaction, returnDetails) => {
     const enteredPayment = returnDetails.amountPaid === '' || returnDetails.amountPaid === null || returnDetails.amountPaid === undefined
         ? null
         : Math.max(0, Number(returnDetails.amountPaid) || 0);
-    const paymentCollected = enteredPayment === null ? remainingBeforePayment : enteredPayment;
+    const paymentCollected = enteredPayment === null ? 0 : enteredPayment;
     const paymentTooHigh = paymentCollected > remainingBeforePayment;
-    const amountPaid = previousAmountPaid + Math.min(paymentCollected, remainingBeforePayment);
+    const amountPaid = Math.min(totalCost, previousAmountPaid + Math.min(paymentCollected, remainingBeforePayment));
     const balanceDue = Math.max(0, totalCost - amountPaid);
 
     return {
@@ -95,6 +96,15 @@ const getInitialBookData = () => ({
     imageUrl: '',
 });
 
+const bookActionItems = [
+    { key: 'add', label: 'Add Book' },
+    { key: 'modify', label: 'Modify Book' },
+    { key: 'delete', label: 'Mark Obsolete' },
+    { key: 'lend', label: 'Lend Book' },
+    { key: 'return', label: 'Return Book' },
+    { key: 'view', label: 'View Book' },
+];
+
 const currency = new Intl.NumberFormat('en-IN', {
     style: 'currency',
     currency: 'INR',
@@ -112,6 +122,20 @@ const readBookImageFile = (file) => new Promise((resolve, reject) => {
 });
 
 const getBookImageUrl = (book) => book?.imageUrl || book?.coverImageUrl || '';
+
+const getBookStatusName = (book) => String(
+    book?.bookstatus?.statusDesc ||
+    book?.bookstatus?.statusName ||
+    book?.bookStatus?.statusDesc ||
+    book?.bookStatus?.statusName ||
+    book?.status ||
+    ''
+).toLowerCase();
+
+const isObsoleteBook = (book) => (
+    getBookStatusName(book) === 'obsolete' ||
+    Number(book?.bookstatus?.statusId || book?.bookStatus?.statusId || book?.statusId) === 6
+);
 
 const getCustomerCommunityId = (customer) => (
     customer?.community?.communityId ||
@@ -395,9 +419,17 @@ const BookActionsPage = () => {
             setSearchError(null);
             const debounceTimer = setTimeout(async () => {
                 try {
-                    // Assuming an endpoint like /books/search?q=...
-                    const response = await apiClient.get(`/books/search?q=${searchQuery}`);
-                    setSearchResults(response.data);
+                    const searchParams = new URLSearchParams({ q: searchQuery });
+                    if (currentAction === 'view') {
+                        searchParams.set('includeObsolete', 'true');
+                    }
+                    const response = await apiClient.get(`/books/search?${searchParams.toString()}`);
+                    const results = Array.isArray(response.data) ? response.data : [];
+                    setSearchResults(
+                        currentAction === 'view'
+                            ? results
+                            : results.filter(book => !isObsoleteBook(book))
+                    );
                 } catch (err) {
                     console.error("Error searching for books:", err);
                     setSearchError("Failed to search for books. Please check the API.");
@@ -538,14 +570,15 @@ const BookActionsPage = () => {
 
 
         const handleSelectBook = (book) => {
-            const statusName = String(
-                book.bookstatus?.statusDesc ||
-                book.bookstatus?.statusName ||
-                book.bookStatus?.statusDesc ||
-                book.bookStatus?.statusName ||
-                book.status ||
-                ''
-            ).toLowerCase();
+            const statusName = getBookStatusName(book);
+
+            if (['modify', 'lend'].includes(currentAction) && isObsoleteBook(book)) {
+                setError(`"${book.bookName}" is marked obsolete and cannot be modified or lent.`);
+                setSelectedBook(null);
+                setSearchQuery(book.bookName);
+                setSearchResults([]);
+                return;
+            }
 
             if (currentAction === 'lend' && statusName && statusName !== 'available') {
                 setError(`"${book.bookName}" is currently unavailable for lending.`);
@@ -561,6 +594,9 @@ const BookActionsPage = () => {
             setSearchResults([]);
             if (currentAction === 'view') {
                 loadBookSummary(book.bookId);
+            }
+            if (currentAction === 'delete' && statusName === 'unavailable') {
+                setError(`"${book.bookName}" is currently lent. Return it before marking obsolete.`);
             }
                         // When a book is selected for lending, set its cost as the total amount
             // and reset the payment details.
@@ -731,12 +767,17 @@ const BookActionsPage = () => {
         }
 
         if (!selectedBook) {
-            setError("No book selected to delete.");
+            setError("No book selected to mark obsolete.");
+            return;
+        }
+
+        if (getBookStatusName(selectedBook) === 'unavailable') {
+            setError("This book is currently lent. Return it before marking obsolete.");
             return;
         }
 
         // Add a confirmation dialog as a safety measure
-        if (!window.confirm(`Are you sure you want to delete "${selectedBook.bookName}"? This action cannot be undone.`)) {
+        if (!window.confirm(`Mark "${selectedBook.bookName}" as obsolete? It will be hidden from normal book lists and lending.`)) {
             return;
         }
 
@@ -747,11 +788,11 @@ const BookActionsPage = () => {
 
         try {
             await apiClient.put(`/books/remove/${selectedBook.bookId}`);
-            setSuccess('Book deleted successfully!');
+            setSuccess('Book marked obsolete successfully.');
             handleClearSelection(); // Clear the form
         } catch (err) {
-            console.error("Error deleting book:", err);
-            setError(err.response?.data?.message || "Failed to delete book.");
+            console.error("Error marking book obsolete:", err);
+            setError(err.response?.data?.message || "Failed to mark book obsolete.");
         } finally {
             deleteBookRequestInFlight.current = false;
             setIsDeletingBook(false);
@@ -884,19 +925,17 @@ const BookActionsPage = () => {
     const lendPreview = getOfferPreview(selectedBook, effectiveLendDetails, activeOffer, activeSubscription);
     const isSubscriptionMode = ['START_SUBSCRIPTION', 'USE_SUBSCRIPTION'].includes(selectedOfferMode);
     const isLendBlockedBySubscription = Boolean(activeSubscription && !activeSubscription.canUseSubscription);
+    const isSelectedBookOnLoan = getBookStatusName(selectedBook) === 'unavailable';
 
     return (
         <div className={`admin-form-container ${currentAction === 'view' ? 'summary-container' : ''}`}>
 
-<div className="action-tabs">
-                <button type="button" onClick={() => handleActionChange('add')} className={currentAction === 'add' ? 'active' : ''}>Add Book</button>
-                <button type="button" onClick={() => handleActionChange('modify')} className={currentAction === 'modify' ? 'active' : ''}>Modify Book</button>
-                <button type="button" onClick={() => handleActionChange('delete')} className={currentAction === 'delete' ? 'active' : ''}>Delete Book</button>
-                <button type="button" onClick={() => handleActionChange('lend')} className={currentAction === 'lend' ? 'active' : ''}>Lend Book</button>
-                <button type="button" onClick={() => handleActionChange('return')} className={currentAction === 'return' ? 'active' : ''}>Return Book</button>
-                <button type="button" onClick={() => handleActionChange('view')} className={currentAction === 'view' ? 'active' : ''}>View Book</button>
-
-            </div>
+            <ManagementActionMenu
+                title="Book Management"
+                actions={bookActionItems}
+                currentAction={currentAction}
+                onActionChange={handleActionChange}
+            />
             <Link to="/" className="back-link">&larr; Back to Dashboard</Link>
             {currentAction === 'add' && (
                 <>
@@ -1032,9 +1071,9 @@ const BookActionsPage = () => {
             {/* Placeholders for other actions */}
             {currentAction === 'delete' && (
                 <>
-                    <h1>Delete a Book</h1>
+                    <h1>Mark Book Obsolete</h1>
                     <div className="search-container">
-                        <label htmlFor="searchQuery">Search for a Book to Delete</label>
+                        <label htmlFor="searchQuery">Search for a Book to Mark Obsolete</label>
                         <input type="text" id="searchQuery" name="searchQuery" placeholder="Start typing a book name..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} autoComplete="off" />
                         {selectedBook && <button type="button" className="clear-selection-btn" onClick={handleClearSelection}>&times;</button>}
                         {loadingSearch && <div className="loader"></div>}
@@ -1048,8 +1087,8 @@ const BookActionsPage = () => {
                             <h3>{selectedBook.bookName}</h3>
                             <p><strong>Author:</strong> {selectedBook.author}</p>
                             <p><strong>Genre:</strong> {selectedBook.genre}</p>
-                            <button type="button" onClick={handleDelete} className="submit-button delete-button" disabled={isDeletingBook}>
-                                {isDeletingBook ? 'Deleting Book...' : 'Delete This Book'}
+                            <button type="button" onClick={handleDelete} className="submit-button delete-button" disabled={isDeletingBook || isSelectedBookOnLoan}>
+                                {isDeletingBook ? 'Marking Obsolete...' : 'Mark Obsolete'}
                             </button>
                         </div>
                     )}
@@ -1350,7 +1389,7 @@ const BookActionsPage = () => {
                                                             min="0"
                                                             max={summary.remainingBeforePayment}
                                                             step="0.01"
-                                                            placeholder={`Full balance: Rs. ${summary.remainingBeforePayment.toFixed(2)}`}
+                                                            placeholder={`Pending: Rs. ${summary.remainingBeforePayment.toFixed(2)}`}
                                                             onChange={(e) => setReturnDetails(p => ({ ...p, amountPaid: e.target.value }))}
                                                         />
                                                     </div>

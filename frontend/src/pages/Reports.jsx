@@ -322,6 +322,7 @@ const Reports = () => {
     const [transactions, setTransactions] = useState([]);
     const [customers, setCustomers] = useState([]);
     const [communities, setCommunities] = useState([]);
+    const [inventoryBooks, setInventoryBooks] = useState([]);
     const [booksById, setBooksById] = useState({});
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -332,31 +333,20 @@ const Reports = () => {
                 setLoading(true);
                 setError(null);
 
-                const [transactionsResponse, customersResponse, communitiesResponse] = await Promise.all([
+                const [transactionsResponse, customersResponse, communitiesResponse, booksResponse] = await Promise.all([
                     apiClient.get('/transactions'),
                     apiClient.get('/customers'),
                     apiClient.get('/communities'),
+                    apiClient.get('/books?includeObsolete=true'),
                 ]);
 
                 const transactionData = Array.isArray(transactionsResponse.data) ? transactionsResponse.data : [];
+                const bookData = Array.isArray(booksResponse.data) ? booksResponse.data : [];
                 setTransactions(transactionData);
                 setCustomers(Array.isArray(customersResponse.data) ? customersResponse.data : []);
                 setCommunities(Array.isArray(communitiesResponse.data) ? communitiesResponse.data : []);
-
-                const uniqueBookIds = [...new Set(transactionData.map(txn => txn.bookId).filter(Boolean))];
-                const bookEntries = await Promise.all(
-                    uniqueBookIds.map(async (bookId) => {
-                        try {
-                            const response = await apiClient.get(`/books/${bookId}`);
-                            return [bookId, response.data];
-                        } catch (bookError) {
-                            console.warn(`Unable to load book ${bookId} for reports`, bookError);
-                            return [bookId, null];
-                        }
-                    })
-                );
-
-                setBooksById(Object.fromEntries(bookEntries.filter(([, book]) => book)));
+                setInventoryBooks(bookData);
+                setBooksById(Object.fromEntries(bookData.filter(book => book?.bookId).map(book => [book.bookId, book])));
             } catch (err) {
                 console.error('Error fetching reports data:', err);
                 setError('Could not fetch reports data. Please try again later.');
@@ -425,11 +415,7 @@ const Reports = () => {
             subscription: 0,
         });
 
-        const uniqueBookIds = [...new Set(filteredTransactions.map(transaction => transaction.bookId).filter(Boolean))];
-        const transactedBookCost = uniqueBookIds.reduce((sum, bookId) => {
-            const book = booksById[bookId];
-            return sum + toNumber(book?.purchasePrice);
-        }, 0);
+        const totalInvested = inventoryBooks.reduce((sum, book) => sum + toNumber(book?.purchasePrice), 0);
 
         const bookMap = new Map();
         const communityMap = new Map();
@@ -536,8 +522,8 @@ const Reports = () => {
         return {
             totals: {
                 ...totals,
-                transactedBookCost,
-                netAfterBookCost: totals.billed - transactedBookCost,
+                totalInvested,
+                netAfterBookCost: totals.billed - totalInvested,
                 collectionRate: totals.billed > 0 ? (totals.collected / totals.billed) * 100 : 0,
             },
             bookPerformance,
@@ -545,7 +531,7 @@ const Reports = () => {
             duesRows: sortByAmount(duesRows, 'pending'),
             transactionRows,
         };
-    }, [booksById, communities, customers, periodMode, selectedRange, transactions]);
+    }, [booksById, communities, customers, inventoryBooks, periodMode, selectedRange, transactions]);
 
     const sortedBookPerformance = useMemo(
         () => sortRows(report.bookPerformance, bookColumns, sortConfig.books),
@@ -674,7 +660,7 @@ const Reports = () => {
                 </div>
                 <div className="metric-card">
                     <span>Total Invested</span>
-                    <strong>{currency.format(report.totals.transactedBookCost)}</strong>
+                    <strong>{currency.format(report.totals.totalInvested)}</strong>
                 </div>
                 <div className="metric-card">
                     <span>Estimated Net</span>

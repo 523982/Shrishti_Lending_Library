@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import apiClient from '../services/api';
 import { CommunitySummaryView } from '../components/SummaryViews';
+import ManagementActionMenu from '../components/ManagementActionMenu';
 import './AdminForms.css';
 import './BookActions.css';
 
@@ -9,6 +10,11 @@ const getEmptyCommunity = () => ({
     communityName: '',
     description: '',
 });
+
+const communityActionItems = [
+    { key: 'add', label: 'Add Community' },
+    { key: 'view', label: 'View Community' },
+];
 
 const AddCommunityPage = () => {
     const [currentAction, setCurrentAction] = useState('add');
@@ -150,10 +156,12 @@ const AddCommunityPage = () => {
 
     return (
         <div className={`admin-form-container ${currentAction === 'view' ? 'summary-container' : ''}`}>
-            <div className="action-tabs">
-                <button type="button" onClick={() => handleActionChange('add')} className={currentAction === 'add' ? 'active' : ''}>Add Community</button>
-                <button type="button" onClick={() => handleActionChange('view')} className={currentAction === 'view' ? 'active' : ''}>View Community</button>
-            </div>
+            <ManagementActionMenu
+                title="Community Management"
+                actions={communityActionItems}
+                currentAction={currentAction}
+                onActionChange={handleActionChange}
+            />
             <Link to="/" className="back-link">&larr; Back to Dashboard</Link>
             {currentAction === 'add' && (
                 <>

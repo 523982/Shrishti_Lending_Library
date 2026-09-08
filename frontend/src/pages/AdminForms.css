@@ -121,6 +121,189 @@
     outline: none;
 }
 
+.management-action-shell {
+    margin-bottom: 1rem;
+}
+
+.management-action-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.7rem;
+    min-height: 42px;
+    max-width: 100%;
+    padding: 0.55rem 0.9rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #17202c;
+    cursor: pointer;
+    font-size: 0.98rem;
+    font-weight: 800;
+}
+
+.management-action-toggle:hover,
+.management-action-toggle:focus-visible {
+    background: #eef6ff;
+    border-color: #93c5fd;
+    outline: none;
+}
+
+.management-action-toggle-icon {
+    width: 11px;
+    height: 11px;
+    border-right: 3px solid #0f62bd;
+    border-bottom: 3px solid #0f62bd;
+    transform: rotate(-45deg);
+    transition: transform 0.2s ease;
+}
+
+.management-action-toggle.open .management-action-toggle-icon {
+    transform: rotate(135deg);
+}
+
+.management-action-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 1240;
+    border: 0;
+    background: rgba(15, 23, 42, 0.36);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+}
+
+.management-action-backdrop.open {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.management-action-drawer {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 1290;
+    width: 284px;
+    max-width: 84vw;
+    display: flex;
+    flex-direction: column;
+    background: #ffffff;
+    color: #17202c;
+    box-shadow: 12px 0 28px rgba(15, 23, 42, 0.2);
+    transform: translateX(-104%);
+    transition: transform 0.22s ease;
+}
+
+.management-action-drawer.open {
+    transform: translateX(0);
+}
+
+.management-action-drawer-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1rem;
+    border-bottom: 1px solid #e6ebf0;
+    background: #f8fafc;
+}
+
+.management-action-drawer-header span {
+    display: block;
+    color: #66717f;
+    font-size: 0.74rem;
+    font-weight: 800;
+    letter-spacing: 0;
+    text-transform: uppercase;
+}
+
+.management-action-drawer-header h2 {
+    margin: 0.2rem 0 0;
+    color: #17202c;
+    font-size: 1.12rem;
+    line-height: 1.2;
+}
+
+.management-action-close {
+    width: 36px;
+    height: 36px;
+    display: grid;
+    place-items: center;
+    flex: 0 0 auto;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: #344054;
+    cursor: pointer;
+}
+
+.management-action-close:hover,
+.management-action-close:focus-visible {
+    background: #e9eef5;
+    outline: none;
+}
+
+.management-action-close span {
+    position: relative;
+    width: 18px;
+    height: 18px;
+}
+
+.management-action-close span::before,
+.management-action-close span::after {
+    content: '';
+    position: absolute;
+    top: 8px;
+    left: 1px;
+    width: 16px;
+    height: 2px;
+    border-radius: 999px;
+    background: currentColor;
+}
+
+.management-action-close span::before {
+    transform: rotate(45deg);
+}
+
+.management-action-close span::after {
+    transform: rotate(-45deg);
+}
+
+.management-action-list {
+    display: grid;
+    gap: 0.25rem;
+    padding: 0.8rem;
+    overflow-y: auto;
+}
+
+.management-action-list button {
+    display: flex;
+    align-items: center;
+    min-height: 46px;
+    width: 100%;
+    padding: 0.7rem 0.85rem;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: #253244;
+    cursor: pointer;
+    font-size: 0.98rem;
+    font-weight: 750;
+    text-align: left;
+}
+
+.management-action-list button:hover,
+.management-action-list button:focus-visible {
+    background: #eef6ff;
+    color: #0056b3;
+    outline: none;
+}
+
+.management-action-list button.active {
+    background: #0d6efd;
+    color: #ffffff;
+}
+
 @keyframes fadeInUp {
     from {
         opacity: 0;
@@ -197,6 +380,68 @@
     background: #fff5f5;
 }
 
+.payment-collection-panel {
+    margin-top: 1rem;
+    padding: 1rem;
+    border: 1px solid #dde3ea;
+    border-radius: 8px;
+    background: #ffffff;
+}
+
+.payment-collection-panel h2 {
+    margin: 0 0 1rem;
+    color: #17202c;
+    font-size: 1.2rem;
+}
+
+.payment-table-wrap {
+    overflow-x: auto;
+}
+
+.payment-table {
+    width: 100%;
+    min-width: 860px;
+    border-collapse: collapse;
+}
+
+.payment-table th,
+.payment-table td {
+    padding: 0.75rem;
+    border-bottom: 1px solid #e6ebf0;
+    text-align: left;
+    vertical-align: top;
+}
+
+.payment-table th {
+    background: #f7f9fb;
+    color: #485363;
+    font-size: 0.82rem;
+    text-transform: uppercase;
+}
+
+.payment-entry {
+    display: grid;
+    grid-template-columns: minmax(90px, 1fr) 92px;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.payment-entry input {
+    width: 100%;
+    min-height: 38px;
+    padding: 8px 10px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    box-sizing: border-box;
+}
+
+.payment-submit-button {
+    width: auto;
+    min-height: 38px;
+    padding: 0 0.8rem;
+    font-size: 0.95rem;
+}
+
 @media (max-width: 760px) {
     .page-container {
         margin: 1rem auto;
@@ -217,6 +462,11 @@
         text-align: left;
     }
 
+    .management-action-toggle {
+        width: 100%;
+        justify-content: flex-start;
+    }
+
     .admin-form fieldset {
         padding: 1rem;
     }
@@ -234,6 +484,52 @@
     .form-group-inline input[type="checkbox"] {
         width: auto;
         align-self: flex-start;
+    }
+
+    .payment-collection-panel {
+        padding: 0.85rem;
+    }
+
+    .payment-table {
+        min-width: 0;
+    }
+
+    .payment-table thead {
+        display: none;
+    }
+
+    .payment-table,
+    .payment-table tbody,
+    .payment-table tr,
+    .payment-table td {
+        display: block;
+        width: 100%;
+    }
+
+    .payment-table tr {
+        margin-bottom: 0.85rem;
+        padding: 0.75rem;
+        border: 1px solid #e6ebf0;
+        border-radius: 8px;
+        background: #fbfcfe;
+    }
+
+    .payment-table td {
+        display: grid;
+        grid-template-columns: 110px minmax(0, 1fr);
+        gap: 0.75rem;
+        padding: 0.45rem 0;
+        border-bottom: 0;
+    }
+
+    .payment-table td::before {
+        content: attr(data-label);
+        color: #66717f;
+        font-weight: 800;
+    }
+
+    .payment-entry {
+        grid-template-columns: 1fr;
     }
 }
 
