@@ -398,6 +398,11 @@
     overflow-x: auto;
 }
 
+.management-list-panel {
+    display: grid;
+    gap: 0.75rem;
+}
+
 .payment-table {
     width: 100%;
     min-width: 860px;
@@ -417,6 +422,58 @@
     color: #485363;
     font-size: 0.82rem;
     text-transform: uppercase;
+}
+
+.payment-table tr.payment-row-highlight {
+    background: #fff8e6;
+    box-shadow: inset 4px 0 0 #f59e0b;
+}
+
+.inline-link-button {
+    border: 0;
+    background: transparent;
+    color: #0056b3;
+    cursor: pointer;
+    font: inherit;
+    font-weight: 800;
+    padding: 0;
+    text-align: left;
+}
+
+.inline-link-button:hover,
+.inline-link-button:focus-visible {
+    outline: none;
+    text-decoration: underline;
+}
+
+.info-message {
+    border: 1px solid #bfdbfe;
+    border-radius: 6px;
+    background: #eff6ff;
+    color: #1d4ed8;
+    font-weight: 700;
+    margin: 0 0 0.75rem;
+    padding: 0.7rem 0.85rem;
+}
+
+.pending-payment-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 0.5rem;
+    color: #b45309;
+    font-weight: 800;
+    text-decoration: none;
+}
+
+.pending-payment-link:hover,
+.pending-payment-link:focus-visible {
+    outline: none;
+    text-decoration: underline;
+}
+
+.pending-payment-after-return {
+    margin-top: 0.75rem;
 }
 
 .payment-entry {

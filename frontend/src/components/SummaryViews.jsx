@@ -34,6 +34,11 @@ const getOfferLabel = (row) => {
     return 'Normal';
 };
 
+const getPendingAmount = (row) => Math.max(
+    0,
+    Number(row?.pendingAmount ?? ((Number(row?.totalAmount) || 0) - (Number(row?.amountPaid) || 0))) || 0,
+);
+
 const MetricCard = ({ label, value }) => (
     <div className="summary-metric">
         <span>{label}</span>
@@ -57,7 +62,7 @@ const buildReturnTarget = (pathname, state, previousReturnTo) => ({
     },
 });
 
-const TransactionTable = ({ rows = [], context, emptyMessage = 'No transactions found.', returnTarget }) => (
+const TransactionTable = ({ rows = [], context, emptyMessage = 'No transactions found.', returnTarget, paymentCustomerId }) => (
     <div className="summary-table-wrap">
         <table className="summary-table">
             <thead>
@@ -72,36 +77,56 @@ const TransactionTable = ({ rows = [], context, emptyMessage = 'No transactions 
                 </tr>
             </thead>
             <tbody>
-                {rows.map(row => (
-                    <tr key={row.transactionId}>
-                        <td data-label="Book">
-                            {row.bookId ? (
-                                <Link to="/admin/books" state={{ adminBookAction: 'view', bookId: row.bookId, returnTo: returnTarget }}>
-                                    {row.bookName || row.bookId}
-                                </Link>
-                            ) : row.bookName || '-'}
-                            {row.author && <span className="summary-subtext">by {row.author}</span>}
-                        </td>
-                        {context !== 'customer' && (
-                            <td data-label="Customer">
-                                {row.customerId ? (
-                                    <Link to="/admin/customers" state={{ customerAction: 'view', customerId: row.customerId, returnTo: returnTarget }}>
-                                        {row.customerName || row.customerId}
+                {rows.map(row => {
+                    const pendingAmount = getPendingAmount(row);
+                    const targetCustomerId = row.customerId || paymentCustomerId;
+                    const canCollectPayment = !row.subscriptionTxnId && pendingAmount > 0 && targetCustomerId;
+
+                    return (
+                        <tr key={row.transactionId}>
+                            <td data-label="Book">
+                                {row.bookId ? (
+                                    <Link to="/admin/books" state={{ adminBookAction: 'view', bookId: row.bookId, returnTo: returnTarget }}>
+                                        {row.bookName || row.bookId}
                                     </Link>
-                                ) : row.customerName || '-'}
-                                {row.mobileNumber && <span className="summary-subtext">{row.mobileNumber}</span>}
+                                ) : row.bookName || '-'}
+                                {row.author && <span className="summary-subtext">by {row.author}</span>}
                             </td>
-                        )}
-                        <td data-label="Pickup">{formatDate(row.pickupDate)}</td>
-                        <td data-label="Return">{formatDate(row.returnDate)}</td>
-                        <td data-label="Amount">
-                            <strong>{formatCurrency(row.totalAmount)}</strong>
-                            <span className="summary-subtext">Paid {formatCurrency(row.amountPaid)}</span>
-                        </td>
-                        <td data-label="Offer / Sub">{getOfferLabel(row)}</td>
-                        <td data-label="Status">{row.active ? 'Active' : 'Returned'}</td>
-                    </tr>
-                ))}
+                            {context !== 'customer' && (
+                                <td data-label="Customer">
+                                    {row.customerId ? (
+                                        <Link to="/admin/customers" state={{ customerAction: 'view', customerId: row.customerId, returnTo: returnTarget }}>
+                                            {row.customerName || row.customerId}
+                                        </Link>
+                                    ) : row.customerName || '-'}
+                                    {row.mobileNumber && <span className="summary-subtext">{row.mobileNumber}</span>}
+                                </td>
+                            )}
+                            <td data-label="Pickup">{formatDate(row.pickupDate)}</td>
+                            <td data-label="Return">{formatDate(row.returnDate)}</td>
+                            <td data-label="Amount">
+                                <strong>{formatCurrency(row.totalAmount)}</strong>
+                                <span className="summary-subtext">Paid {formatCurrency(row.amountPaid)}</span>
+                                {canCollectPayment && (
+                                    <Link
+                                        to="/admin/customers"
+                                        className="summary-payment-link"
+                                        state={{
+                                            customerAction: 'payment',
+                                            customerId: targetCustomerId,
+                                            paymentTransactionId: row.transactionId,
+                                            returnTo: returnTarget,
+                                        }}
+                                    >
+                                        Collect pending {formatCurrency(pendingAmount)}
+                                    </Link>
+                                )}
+                            </td>
+                            <td data-label="Offer / Sub">{getOfferLabel(row)}</td>
+                            <td data-label="Status">{row.active ? 'Active' : 'Returned'}</td>
+                        </tr>
+                    );
+                })}
                 {rows.length === 0 && (
                     <tr>
                         <td colSpan={context === 'customer' ? 6 : 7}>{emptyMessage}</td>
@@ -161,12 +186,12 @@ export const CustomerSummaryView = ({ summary }) => {
 
             <section className="summary-panel">
                 <h3>Books With Customer</h3>
-                <TransactionTable rows={summary.activeBooks} context="customer" emptyMessage="No active books with this customer." returnTarget={returnTarget} />
+                <TransactionTable rows={summary.activeBooks} context="customer" emptyMessage="No active books with this customer." returnTarget={returnTarget} paymentCustomerId={summary.customerId} />
             </section>
 
             <section className="summary-panel">
                 <h3>Customer History</h3>
-                <TransactionTable rows={summary.history} context="customer" returnTarget={returnTarget} />
+                <TransactionTable rows={summary.history} context="customer" returnTarget={returnTarget} paymentCustomerId={summary.customerId} />
             </section>
         </div>
     );
@@ -220,6 +245,20 @@ export const BookSummaryView = ({ summary }) => {
                         <span>Pickup {formatDate(summary.activeTransaction.pickupDate)}</span>
                         <span>{getOfferLabel(summary.activeTransaction)}</span>
                     </div>
+                    {!summary.activeTransaction.subscriptionTxnId && getPendingAmount(summary.activeTransaction) > 0 && (
+                        <Link
+                            to="/admin/customers"
+                            className="summary-payment-link"
+                            state={{
+                                customerAction: 'payment',
+                                customerId: summary.activeTransaction.customerId,
+                                paymentTransactionId: summary.activeTransaction.transactionId,
+                                returnTo: returnTarget,
+                            }}
+                        >
+                            Collect pending {formatCurrency(getPendingAmount(summary.activeTransaction))}
+                        </Link>
+                    )}
                 </section>
             )}
 

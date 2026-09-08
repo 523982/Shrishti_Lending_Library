@@ -148,6 +148,14 @@
     text-decoration: none;
 }
 
+.summary-payment-link,
+.summary-table .summary-payment-link {
+    display: inline-block;
+    margin-top: 0.35rem;
+    color: #b45309;
+    font-size: 0.86rem;
+}
+
 .summary-table a:hover,
 .summary-heading a:hover {
     text-decoration: underline;

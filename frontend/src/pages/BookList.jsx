@@ -1,4 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import apiClient, { API_BASE_URL } from '../services/api';
 import BookCard from '../pages/BookCard';
 import '../pages/BookList.css'; // CSS for the grid layout
@@ -16,6 +17,8 @@ const getStatusName = (book) => String(
 
 const isAvailableBook = (book) => Number(getStatusId(book)) === 1 || getStatusName(book) === 'available';
 
+const isUnavailableBook = (book) => Number(getStatusId(book)) === 2 || getStatusName(book) === 'unavailable';
+
 const isObsoleteBook = (book) => {
     return Number(getStatusId(book)) === 6 || getStatusName(book) === 'obsolete';
 };
@@ -26,6 +29,11 @@ const getBookGenre = (book) => {
 };
 
 const BOOKS_CACHE_KEY = `shrishti.books.cache.v1:${API_BASE_URL}`;
+const VALID_AVAILABILITY_FILTERS = ['available', 'all', 'unavailable'];
+
+const normalizeAvailabilityFilter = (value) => (
+    VALID_AVAILABILITY_FILTERS.includes(value) ? value : 'available'
+);
 
 const getCacheTimeLabel = (cachedAt) => {
     if (!cachedAt) return '';
@@ -104,13 +112,19 @@ const getBooksApiErrorMessage = (err) => {
 };
 
 const BookList = () => {
+    const [searchParams] = useSearchParams();
     const [books, setBooks] = useState([]);
     const [error, setError] = useState(null);
     const [cacheNotice, setCacheNotice] = useState(null);
     const [isShowingCachedBooks, setIsShowingCachedBooks] = useState(false);
     const [loading, setLoading] = useState(true);
-    const [genreFilter, setGenreFilter] = useState('all');
-    const [availabilityFilter, setAvailabilityFilter] = useState('available');
+    const [genreFilter, setGenreFilter] = useState(() => searchParams.get('genre') || 'all');
+    const [availabilityFilter, setAvailabilityFilter] = useState(() => normalizeAvailabilityFilter(searchParams.get('availability')));
+
+    useEffect(() => {
+        setGenreFilter(searchParams.get('genre') || 'all');
+        setAvailabilityFilter(normalizeAvailabilityFilter(searchParams.get('availability')));
+    }, [searchParams]);
 
     useEffect(() => {
         let didCancel = false;
@@ -172,7 +186,7 @@ const BookList = () => {
         const matchesGenre = genreFilter === 'all' || getBookGenre(book) === genreFilter;
         const matchesAvailability = availabilityFilter === 'all' ||
             (availabilityFilter === 'available' && isAvailableBook(book)) ||
-            (availabilityFilter === 'unavailable' && !isAvailableBook(book));
+            (availabilityFilter === 'unavailable' && isUnavailableBook(book));
 
         return matchesGenre && matchesAvailability;
     }), [books, genreFilter, availabilityFilter]);
@@ -213,7 +227,7 @@ const BookList = () => {
                         <select value={availabilityFilter} onChange={(event) => setAvailabilityFilter(event.target.value)}>
                             <option value="available">Available Only</option>
                             <option value="all">All Books</option>
-                            <option value="unavailable">Unavailable / Other</option>
+                            <option value="unavailable">Unavailable Only</option>
                         </select>
                     </label>
                     <button type="button" onClick={handleResetFilters}>Reset</button>

@@ -65,22 +65,22 @@ const AdminDashboard = () => {
         <div className="admin-dashboard">
             <h1>Admin Dashboard</h1>
             <div className="stats-grid">
-                <div className="stat-card">
+                <Link to="/browse?availability=all" className="stat-card stat-card-link">
                     <h2>{stats.totalBooks || 0}</h2>
                     <p>Total Books</p>
-                </div>
-                <div className="stat-card">
+                </Link>
+                <Link to="/browse?availability=unavailable" className="stat-card stat-card-link">
                     <h2>{stats.booksOnLoan || 0}</h2>
                     <p>Books on Loan</p>
-                </div>
-                <div className="stat-card">
+                </Link>
+                <Link to="/admin/customers" state={{ customerAction: 'all' }} className="stat-card stat-card-link">
                     <h2>{stats.activeMembers || 0}</h2>
                     <p>Active Members</p>
-                </div>
-                <div className="stat-card">
+                </Link>
+                <Link to="/admin/add-community" state={{ communityAction: 'all' }} className="stat-card stat-card-link">
                     <h2>{stats.communities || 0}</h2>
                     <p>Communities</p>
-                </div>
+                </Link>
             </div>
 
             <div className="dashboard-section">

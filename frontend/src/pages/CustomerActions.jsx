@@ -18,6 +18,7 @@ const customerActionItems = [
     { key: 'delete', label: 'Delete Customer' },
     { key: 'payment', label: 'Collect Payment' },
     { key: 'view', label: 'View Customer' },
+    { key: 'all', label: 'All Customers' },
 ];
 
 const emptyCustomer = {
@@ -76,7 +77,9 @@ const CustomerActionsPage = () => {
     const [searchResults, setSearchResults] = useState([]);
     const [loadingSearch, setLoadingSearch] = useState(false);
     const [communities, setCommunities] = useState([]);
+    const [allCustomers, setAllCustomers] = useState([]);
     const [loadingCommunities, setLoadingCommunities] = useState(true);
+    const [loadingAllCustomers, setLoadingAllCustomers] = useState(false);
     const [customerSummary, setCustomerSummary] = useState(null);
     const [loadingSummary, setLoadingSummary] = useState(false);
     const [isAddingCustomer, setIsAddingCustomer] = useState(false);
@@ -84,6 +87,7 @@ const CustomerActionsPage = () => {
     const [isDeletingCustomer, setIsDeletingCustomer] = useState(false);
     const [paymentAmounts, setPaymentAmounts] = useState({});
     const [collectingTransactionId, setCollectingTransactionId] = useState(null);
+    const [highlightPaymentTransactionId, setHighlightPaymentTransactionId] = useState(null);
     const [error, setError] = useState(null);
     const [success, setSuccess] = useState(null);
     const addCustomerRequestInFlight = useRef(false);
@@ -126,9 +130,31 @@ const CustomerActionsPage = () => {
         }
     };
 
+    const loadAllCustomers = async () => {
+        try {
+            setLoadingAllCustomers(true);
+            setError(null);
+            const response = await apiClient.get('/customers');
+            const rows = Array.isArray(response.data) ? response.data : [];
+            setAllCustomers([...rows].sort((a, b) => String(a.customerName || '').localeCompare(String(b.customerName || ''))));
+        } catch (err) {
+            console.error('Error loading customers:', err);
+            setAllCustomers([]);
+            setError(getApiErrorMessage(err, 'Failed to load customers.'));
+        } finally {
+            setLoadingAllCustomers(false);
+        }
+    };
+
     useEffect(() => {
+        if (location.state?.customerAction === 'all') {
+            setCurrentAction('all');
+            setHighlightPaymentTransactionId(null);
+            return;
+        }
         if (['view', 'payment'].includes(location.state?.customerAction) && location.state?.customerId) {
             setCurrentAction(location.state.customerAction);
+            setHighlightPaymentTransactionId(location.state.paymentTransactionId || null);
             loadCustomerSummary(location.state.customerId);
             return;
         }
@@ -141,6 +167,12 @@ const CustomerActionsPage = () => {
             setCurrentAction('add');
         }
     }, [location.state]);
+
+    useEffect(() => {
+        if (currentAction === 'all') {
+            loadAllCustomers();
+        }
+    }, [currentAction]);
 
     useEffect(() => {
         const fetchCommunities = async () => {
@@ -201,6 +233,7 @@ const CustomerActionsPage = () => {
         setCustomerSummary(null);
         setPaymentAmounts({});
         setCollectingTransactionId(null);
+        setHighlightPaymentTransactionId(null);
         clearMessages();
         if (action === 'add') {
             setCustomerData(getEmptyCustomer());
@@ -348,8 +381,21 @@ const CustomerActionsPage = () => {
             rowsByTransactionId.set(row.transactionId, row);
         });
 
-        return [...rowsByTransactionId.values()];
+        const rows = [...rowsByTransactionId.values()];
+        if (!highlightPaymentTransactionId) {
+            return rows;
+        }
+
+        return rows.sort((a, b) => {
+            if (a.transactionId === highlightPaymentTransactionId) return -1;
+            if (b.transactionId === highlightPaymentTransactionId) return 1;
+            return 0;
+        });
     })();
+    const hasHighlightedPaymentRow = Boolean(
+        highlightPaymentTransactionId &&
+        pendingPaymentRows.some(row => row.transactionId === highlightPaymentTransactionId),
+    );
 
     const handlePaymentAmountChange = (transactionId, value) => {
         setPaymentAmounts(prev => ({
@@ -513,6 +559,58 @@ const CustomerActionsPage = () => {
                 </>
             )}
 
+            {currentAction === 'all' && (
+                <>
+                    <h1>All Customers</h1>
+                    {loadingAllCustomers && <p>Loading customers...</p>}
+                    {!loadingAllCustomers && (
+                        <div className="management-list-panel">
+                            {allCustomers.length === 0 ? (
+                                <p>No customers found.</p>
+                            ) : (
+                                <div className="payment-table-wrap">
+                                    <table className="payment-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Customer</th>
+                                                <th>Block</th>
+                                                <th>Unit</th>
+                                                <th>Mobile</th>
+                                                <th>Community</th>
+                                                <th>Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {allCustomers.map(customer => (
+                                                <tr key={customer.customerId}>
+                                                    <td data-label="Customer">{customer.customerName || '-'}</td>
+                                                    <td data-label="Block">{customer.blockNumber || '-'}</td>
+                                                    <td data-label="Unit">{customer.unitNumber || '-'}</td>
+                                                    <td data-label="Mobile">{customer.mobileNumber || '-'}</td>
+                                                    <td data-label="Community">{customer.community?.communityName || customer.communityId || '-'}</td>
+                                                    <td data-label="Action">
+                                                        <button
+                                                            type="button"
+                                                            className="inline-link-button"
+                                                            onClick={() => {
+                                                                setCurrentAction('view');
+                                                                loadCustomerSummary(customer.customerId);
+                                                            }}
+                                                        >
+                                                            View
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </>
+            )}
+
             {currentAction === 'view' && (
                 <>
                     <h1>View Customer</h1>
@@ -531,6 +629,9 @@ const CustomerActionsPage = () => {
                     {!loadingSummary && selectedCustomer && customerSummary && (
                         <div className="payment-collection-panel">
                             <h2>{customerSummary.customerName}</h2>
+                            {highlightPaymentTransactionId && !hasHighlightedPaymentRow && (
+                                <p className="info-message">The selected transaction has no pending payment now.</p>
+                            )}
                             {pendingPaymentRows.length === 0 ? (
                                 <p>No pending payment or active normal loan for this customer.</p>
                             ) : (
@@ -554,7 +655,10 @@ const CustomerActionsPage = () => {
                                                 const isCollecting = collectingTransactionId === transaction.transactionId;
 
                                                 return (
-                                                    <tr key={transaction.transactionId}>
+                                                    <tr
+                                                        key={transaction.transactionId}
+                                                        className={transaction.transactionId === highlightPaymentTransactionId ? 'payment-row-highlight' : ''}
+                                                    >
                                                         <td data-label="Book">{transaction.bookName || '-'}</td>
                                                         <td data-label="Pickup">{formatDate(transaction.pickupDate)}</td>
                                                         <td data-label="Return">{formatDate(transaction.returnDate)}</td>

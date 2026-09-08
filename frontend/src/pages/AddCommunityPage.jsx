@@ -14,6 +14,7 @@ const getEmptyCommunity = () => ({
 const communityActionItems = [
     { key: 'add', label: 'Add Community' },
     { key: 'view', label: 'View Community' },
+    { key: 'all', label: 'All Communities' },
 ];
 
 const AddCommunityPage = () => {
@@ -81,6 +82,10 @@ const AddCommunityPage = () => {
     }, []);
 
     useEffect(() => {
+        if (location.state?.communityAction === 'all') {
+            setCurrentAction('all');
+            return;
+        }
         if (location.state?.communityAction === 'view' && location.state?.communityId) {
             setCurrentAction('view');
             loadCommunitySummary(location.state.communityId);
@@ -155,7 +160,7 @@ const AddCommunityPage = () => {
     };
 
     return (
-        <div className={`admin-form-container ${currentAction === 'view' ? 'summary-container' : ''}`}>
+        <div className={`admin-form-container ${['view', 'all'].includes(currentAction) ? 'summary-container' : ''}`}>
             <ManagementActionMenu
                 title="Community Management"
                 actions={communityActionItems}
@@ -214,6 +219,51 @@ const AddCommunityPage = () => {
                     </div>
                     {loadingSummary && <p>Loading community summary...</p>}
                     {!loadingSummary && communitySummary && <CommunitySummaryView summary={communitySummary} />}
+                </>
+            )}
+            {currentAction === 'all' && (
+                <>
+                    <h1>All Communities</h1>
+                    {loadingCommunities && <p>Loading communities...</p>}
+                    {!loadingCommunities && (
+                        <div className="management-list-panel">
+                            {communities.length === 0 ? (
+                                <p>No communities found.</p>
+                            ) : (
+                                <div className="payment-table-wrap">
+                                    <table className="payment-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Community</th>
+                                                <th>Active Offer</th>
+                                                <th>Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {communities.map(community => (
+                                                <tr key={community.communityId}>
+                                                    <td data-label="Community">{community.communityName || '-'}</td>
+                                                    <td data-label="Active Offer">{community.offerActive ? 'Active' : 'No active offer'}</td>
+                                                    <td data-label="Action">
+                                                        <button
+                                                            type="button"
+                                                            className="inline-link-button"
+                                                            onClick={() => {
+                                                                setCurrentAction('view');
+                                                                loadCommunitySummary(community.communityId);
+                                                            }}
+                                                        >
+                                                            View
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </>
             )}
             {success && <p className="success-message">{success}</p>}

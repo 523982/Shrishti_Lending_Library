@@ -258,6 +258,7 @@ const BookActionsPage = () => {
         const [returnBookResults, setReturnBookResults] = useState([]);
         const [loadingReturnSearch, setLoadingReturnSearch] = useState(false);
         const [selectedReturnTransaction, setSelectedReturnTransaction] = useState(null);
+        const [pendingPaymentTarget, setPendingPaymentTarget] = useState(null);
         const [returnDetails, setReturnDetails] = useState({
             returnDate: new Date().toISOString().split('T')[0], // Default to today
             isSwap: false,
@@ -559,6 +560,7 @@ const BookActionsPage = () => {
                 throw new Error("No active transaction found for this book.");
             }
             setSelectedReturnTransaction(activeTransaction);
+            setPendingPaymentTarget(null);
             // Reset return details when a new book is selected
             setReturnDetails({ returnDate: new Date().toISOString().split('T')[0], isSwap: false, amountPaid: '' });
         } catch (err) {
@@ -625,6 +627,7 @@ const BookActionsPage = () => {
             setReturnBookQuery('');
             setReturnBookResults([]);
             setSelectedReturnTransaction(null);
+            setPendingPaymentTarget(null);
             setReturnDetails({ returnDate: new Date().toISOString().split('T')[0], isSwap: false, amountPaid: '' });
             setSelectedLendCustomer(null);
             setLendCustomerQuery('');
@@ -880,6 +883,7 @@ const BookActionsPage = () => {
         }
         setError(null);
         setSuccess(null);
+        setPendingPaymentTarget(null);
         const summary = calculateReturnSummary(selectedReturnTransaction, returnDetails);
         if (!summary.isSubscription && summary.paymentTooHigh) {
             setError("Payment collected cannot be more than the pending balance.");
@@ -890,6 +894,16 @@ const BookActionsPage = () => {
         setIsReturningBook(true);
 
         try {
+            const returnedTransaction = selectedReturnTransaction;
+            const nextPendingPaymentTarget = !summary.isSubscription && summary.balanceDue > 0
+                ? {
+                    customerId: returnedTransaction.customerId,
+                    transactionId: returnedTransaction.transactionId,
+                    bookId: returnedTransaction.bookId,
+                    bookName: returnedTransaction.bookName,
+                    balanceDue: summary.balanceDue,
+                }
+                : null;
             const payload = {
                 returnDate: returnDetails.returnDate,
                 swap: returnDetails.isSwap,
@@ -900,6 +914,7 @@ const BookActionsPage = () => {
             // This new endpoint will handle the return logic
             await apiClient.put(`/transactions/${selectedReturnTransaction.bookId}/return`, payload);
             setSuccess(`Book returned successfully! Balance pending: Rs. ${summary.balanceDue.toFixed(2)}.`);
+            setPendingPaymentTarget(nextPendingPaymentTarget);
 
             // Reset the state
             setReturnBookQuery('');
@@ -1418,6 +1433,29 @@ const BookActionsPage = () => {
                                                     <p>Rs. {summary.amountPaid.toFixed(2)}</p>
                                                     <label>Balance Pending:</label>
                                                     <p className="calculated-cost">Rs. {summary.balanceDue.toFixed(2)}</p>
+                                                    {!summary.isSubscription && summary.balanceDue > 0 && (
+                                                        <Link
+                                                            to="/admin/customers"
+                                                            className="pending-payment-link"
+                                                            state={{
+                                                                customerAction: 'payment',
+                                                                customerId: selectedReturnTransaction.customerId,
+                                                                paymentTransactionId: selectedReturnTransaction.transactionId,
+                                                                returnTo: {
+                                                                    pathname: '/admin/books',
+                                                                    state: {
+                                                                        adminBookAction: 'return',
+                                                                        book: {
+                                                                            bookId: selectedReturnTransaction.bookId,
+                                                                            bookName: selectedReturnTransaction.bookName,
+                                                                        },
+                                                                    },
+                                                                },
+                                                            }}
+                                                        >
+                                                            View pending transaction for this book
+                                                        </Link>
+                                                    )}
                                                 </div>
                                             </>
                                         );
@@ -1432,6 +1470,26 @@ const BookActionsPage = () => {
                 </>
             )}
             {success && <p className="success-message">{success}</p>}
+            {pendingPaymentTarget && (
+                <Link
+                    to="/admin/customers"
+                    className="pending-payment-link pending-payment-after-return"
+                    state={{
+                        customerAction: 'payment',
+                        customerId: pendingPaymentTarget.customerId,
+                        paymentTransactionId: pendingPaymentTarget.transactionId,
+                        returnTo: {
+                            pathname: '/admin/books',
+                            state: {
+                                adminBookAction: 'view',
+                                bookId: pendingPaymentTarget.bookId,
+                            },
+                        },
+                    }}
+                >
+                    View pending payment for {pendingPaymentTarget.bookName} ({currency.format(pendingPaymentTarget.balanceDue)})
+                </Link>
+            )}
             {error && <p className="error-message">{error}</p>}
         </div>
 
