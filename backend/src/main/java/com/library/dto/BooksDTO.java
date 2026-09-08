@@ -9,6 +9,7 @@ public class BooksDTO {
     private String author;
     private String genre;
     private BigDecimal lendingCost;
+    private BigDecimal purchasePrice;
     private LocalDate purchaseDate;
     private String imageUrl;
     private BookStatusDTO bookstatus; // Use the DTO here
@@ -42,6 +43,14 @@ public class BooksDTO {
 	}
 	public void setLendingCost(BigDecimal bigDecimal) {
 		this.lendingCost = bigDecimal;
+	}
+
+	public BigDecimal getPurchasePrice() {
+		return purchasePrice;
+	}
+
+	public void setPurchasePrice(BigDecimal purchasePrice) {
+		this.purchasePrice = purchasePrice;
 	}
 
 	public LocalDate getPurchaseDate() {

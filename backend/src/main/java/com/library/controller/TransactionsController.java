@@ -2,6 +2,7 @@ package com.library.controller;
 
 
 import com.library.dto.LendRequestDTO;
+import com.library.dto.PaymentRequestDTO;
 import com.library.dto.ReturnRequestDTO;
 import com.library.dto.SubscriptionStatusDTO;
 import com.library.dto.TransactionResponseDTO;
@@ -61,6 +62,14 @@ import java.util.List;
 	    		@RequestBody(required = false) ReturnRequestDTO returnRequest) {
 	    	TransactionResponseDTO updatedTransactions = transactionsService.returnBook(bookId, returnRequest);
 	        return ResponseEntity.ok(updatedTransactions);
+	    }
+
+	    @PutMapping("/{id}/payment")
+	    public ResponseEntity<TransactionResponseDTO> collectPayment(
+	    		@PathVariable(value = "id") String transactionId,
+	    		@RequestBody PaymentRequestDTO paymentRequest) {
+	    	TransactionResponseDTO updatedTransaction = transactionsService.collectPayment(transactionId, paymentRequest);
+	        return ResponseEntity.ok(updatedTransaction);
 	    }
 
 	}

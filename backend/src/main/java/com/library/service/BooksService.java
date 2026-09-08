@@ -38,8 +38,8 @@ public class BooksService {
 		}
 	    
 
-		public List<BooksDTO> getAllBooks() {
-			 return booksRepository.findByStatusIdNot(6L)
+		public List<BooksDTO> getAllBooks(boolean includeObsolete) {
+			 return (includeObsolete ? booksRepository.findAll() : booksRepository.findByStatusIdNot(6L))
                      .stream()
                      .map(this::convertToDto)
                      .collect(Collectors.toList());
@@ -138,6 +138,7 @@ public class BooksService {
 	        dto.setAuthor(book.getAuthor());
 	        dto.setGenre(book.getGenre());
 	        dto.setLendingCost(book.getLendingCost());
+	        dto.setPurchasePrice(book.getPurchasePrice());
 	        dto.setPurchaseDate(book.getPurchaseDate());
 	        dto.setImageUrl(book.getImageUrl());
 

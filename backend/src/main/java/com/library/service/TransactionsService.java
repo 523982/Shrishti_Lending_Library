@@ -1,6 +1,7 @@
 package com.library.service;
 
 import com.library.dto.LendRequestDTO;
+import com.library.dto.PaymentRequestDTO;
 import com.library.dto.ReturnRequestDTO;
 import com.library.dto.SubscriptionStatusDTO;
 import com.library.dto.TransactionResponseDTO;
@@ -175,11 +176,11 @@ public class TransactionsService {
 				normalAmount = money(normalAmount.divide(BigDecimal.valueOf(2), 2, RoundingMode.HALF_UP));
 			}
 
-			BigDecimal finalAmount = normalAmount;
-			BigDecimal discountAmount = BigDecimal.ZERO;
-			if (transactions.getOffer() != null && transactions.getOffer().getOfferType() == OfferType.PERCENT) {
-				discountAmount = calculatePercentDiscount(normalAmount, transactions.getOffer());
-				finalAmount = money(normalAmount.subtract(discountAmount));
+		BigDecimal finalAmount = normalAmount;
+		BigDecimal discountAmount = BigDecimal.ZERO;
+		if (transactions.getOffer() != null && transactions.getOffer().getOfferType() == OfferType.PERCENT) {
+			discountAmount = calculatePercentDiscount(normalAmount, transactions.getOffer());
+			finalAmount = money(normalAmount.subtract(discountAmount));
 			}
 
 			transactions.setNormalAmount(normalAmount);
@@ -190,10 +191,8 @@ public class TransactionsService {
 			if (returnRequest != null && returnRequest.getAmountPaid() != null) {
 				BigDecimal returnPayment = getCollectedAmount(returnRequest.getAmountPaid(), "Payment amount cannot be negative.");
 				paidAmount = money(paidAmount.add(returnPayment));
-				if (paidAmount.compareTo(finalAmount) > 0) {
-					paidAmount = finalAmount;
-				}
-			} else if (!transactions.isPartiallyPaid()) {
+			}
+			if (paidAmount.compareTo(finalAmount) > 0) {
 				paidAmount = finalAmount;
 			}
 			transactions.setAmountPaid(paidAmount);
@@ -250,6 +249,45 @@ public class TransactionsService {
 
 	private boolean isPartiallyPaid(BigDecimal amountPaid, BigDecimal totalAmount) {
 		return amountPaid.compareTo(BigDecimal.ZERO) > 0 && amountPaid.compareTo(totalAmount) < 0;
+	}
+
+	@Transactional
+	public TransactionResponseDTO collectPayment(String transactionId, PaymentRequestDTO paymentRequest) {
+		Transactions transaction = transactionsRepository.findById(transactionId)
+				.orElseThrow(() -> new ResourceNotFoundException("Transaction not found with id: " + transactionId));
+		if (transaction.getSubscriptionTxnId() != null) {
+			throw new IllegalStateException("Subscription transactions are paid through the subscription amount.");
+		}
+		if (paymentRequest == null || paymentRequest.getAmountPaid() == null) {
+			throw new IllegalArgumentException("Payment amount is required.");
+		}
+
+		BigDecimal paymentAmount = getCollectedAmount(paymentRequest.getAmountPaid(), "Payment amount cannot be negative.");
+		if (paymentAmount.compareTo(BigDecimal.ZERO) <= 0) {
+			throw new IllegalArgumentException("Payment amount must be greater than zero.");
+		}
+
+		BigDecimal totalAmount = money(transaction.getTotalAmount());
+		BigDecimal currentPaid = money(transaction.getAmountPaid());
+		if (transaction.getReturnDate() == null) {
+			BigDecimal updatedPaid = money(currentPaid.add(paymentAmount));
+			transaction.setAmountPaid(updatedPaid);
+			transaction.setPartiallyPaid(updatedPaid.compareTo(totalAmount) < 0);
+			return convertToDto(transactionsRepository.save(transaction));
+		}
+
+		BigDecimal pendingAmount = totalAmount.subtract(currentPaid).max(BigDecimal.ZERO);
+		if (pendingAmount.compareTo(BigDecimal.ZERO) <= 0) {
+			throw new IllegalStateException("This transaction has no pending payment.");
+		}
+		if (paymentAmount.compareTo(pendingAmount) > 0) {
+			throw new IllegalArgumentException("Payment amount cannot be more than the pending balance.");
+		}
+
+		BigDecimal updatedPaid = money(currentPaid.add(paymentAmount));
+		transaction.setAmountPaid(updatedPaid);
+		transaction.setPartiallyPaid(updatedPaid.compareTo(totalAmount) < 0);
+		return convertToDto(transactionsRepository.save(transaction));
 	}
 
 	private void startSubscription(Transactions transaction, Offers offer, Books book, LocalDate pickupDate) {

@@ -52,8 +52,8 @@ public class BooksController {
     
 
     @GetMapping
-    public List<BooksDTO> getAllBooks() {
-        return booksService.getAllBooks();
+    public List<BooksDTO> getAllBooks(@RequestParam(value = "includeObsolete", defaultValue = "false") boolean includeObsolete) {
+        return booksService.getAllBooks(includeObsolete);
     }
     
     @GetMapping("/count")
